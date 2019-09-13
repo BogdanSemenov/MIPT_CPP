@@ -26,9 +26,7 @@ class Graph {
     return is_directed_;
   }
 
-  virtual void addEdge(const Vertex& start, const Vertex& finish) {
-    ++edge_count_;
-  }
+  virtual void AddEdge(const Vertex& start, const Vertex& finish) = 0;
 };
 
 class GraphAdjMatrix : public Graph {
@@ -40,7 +38,7 @@ class GraphAdjMatrix : public Graph {
       : Graph(vertex_count),
         adj_matrix_(vertex_count_ + 1, std::vector<bool>(vertex_count_ + 1, false)) {}
 
-  void addEdge(const Vertex& start, const Vertex& finish) override {
+  void AddEdge(const Vertex& start, const Vertex& finish) override {
     adj_matrix_[start][finish] = true;
     if (!is_directed_) {
       adj_matrix_[finish][start] = true;
@@ -61,7 +59,7 @@ void FillEdge(Graph& g) {
     for (int j = 1; j < vertex_count + 1; ++j) {
       std::cin >> input;
       if (input == 1) {
-        g.addEdge(i, j);
+        g.AddEdge(i, j);
       }
     }
   }
