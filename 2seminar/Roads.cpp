@@ -12,8 +12,7 @@ class Graph {
   explicit Graph(size_t vertex_count, bool is_directed = false)
       : vertex_count_(vertex_count),
         is_directed_(is_directed),
-        edge_count_(0)
-  {}
+        edge_count_(0) {}
 
   size_t getVertexCount() const {
     return vertex_count_;
@@ -32,7 +31,7 @@ class Graph {
   }
 };
 
-class GraphAdjMatrix: public Graph {
+class GraphAdjMatrix : public Graph {
  private:
   std::vector<std::vector<bool>> adj_matrix_;
 
@@ -43,12 +42,12 @@ class GraphAdjMatrix: public Graph {
 
   void addEdge(const Vertex& start, const Vertex& finish) override {
     adj_matrix_[start][finish] = true;
-    if(!is_directed_) {
+    if (!is_directed_) {
       adj_matrix_[finish][start] = true;
     }
   }
 
-  bool operator() (const Vertex& start, const Vertex& finish) const {
+  bool operator()(const Vertex& start, const Vertex& finish) const {
     return adj_matrix_[start][finish];
   }
 
@@ -58,8 +57,8 @@ namespace GraphProcessing {
 void FillEdge(Graph& g) {
   int input;
   int vertex_count = g.getVertexCount();
-  for(int i = 1; i < vertex_count + 1; ++i) {
-    for(int j = 1; j < vertex_count + 1; ++j) {
+  for (int i = 1; i < vertex_count + 1; ++i) {
+    for (int j = 1; j < vertex_count + 1; ++j) {
       std::cin >> input;
       if (input == 1) {
         g.addEdge(i, j);
@@ -73,7 +72,7 @@ size_t CountRoads(GraphAdjMatrix& g) {
   int vertex_count = g.getVertexCount();
   for (int i = 1; i < vertex_count + 1; ++i) {
     for (int j = 1; j < i; ++j) {
-      if(g(i, j) == 1) {
+      if (g(i, j) == 1) {
         ++counter;
       }
     }
