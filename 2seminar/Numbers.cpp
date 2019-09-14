@@ -50,7 +50,10 @@ void BFS(int first_number, int second_number, std::vector<int>& prev) {
   std::queue<int> q;
   q.push(first_number);
   used[first_number] = true;
-  int first, second, third, fourth = 0;
+  int first = 0;
+  int second = 0;
+  int third = 0;
+  int fourth = 0;
 
   while (!used[second_number]) {
     int curr = q.front();
@@ -69,7 +72,8 @@ void BFS(int first_number, int second_number, std::vector<int>& prev) {
 
 std::vector<int> FindPath() {
   const size_t MAX_SIZE = 10000;
-  int first_number, second_number;
+  int first_number = 0;
+  int second_number = 0;
   std::cin >> first_number >> second_number;
 
   std::vector<int> prev(MAX_SIZE, -1);

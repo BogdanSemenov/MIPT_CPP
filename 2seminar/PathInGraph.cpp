@@ -10,7 +10,7 @@ class Graph {
 
  public:
   typedef size_t Vertex;
-  explicit Graph(size_t vertex_count = 0, size_t edge_count = 0, bool is_directed = false)
+  explicit Graph(size_t vertex_count, size_t edge_count = 0, bool is_directed = false)
       : vertex_count_(vertex_count),
         is_directed_(is_directed),
         edge_count_(edge_count) {}
@@ -40,9 +40,6 @@ class GraphAdjList : public Graph {
       : Graph(vertex_count),
         adj_list_(vertex_count + 1) {}
 
-  explicit GraphAdjList()
-      : Graph() {}
-
   void AddEdge(const Vertex& start, const Vertex& finish) override {
     adj_list_[start].push_back(finish);
     if (!is_directed_) {
@@ -57,46 +54,17 @@ class GraphAdjList : public Graph {
 };
 
 namespace GraphProcessing {
-
-int IncreaseFirstDigit(int number) {
-  const size_t thousand = 1000;
-  int temp = number;
-  if (number / thousand != 9) {
-    temp += thousand;
-  }
-  return temp;
-}
-
-int DecreaseLastDigit(int number) {
-  const size_t ten = 10;
-  int temp = number;
-  if (number % ten != 1) {
-    ++temp;
-  }
-  return temp;
-}
-
-int RightRotation(int number) {
-  const size_t ten = 10;
-  const size_t thousand = 1000;
-  int temp = number / ten + thousand * (number / thousand);
-  return temp;
-}
-
-int LeftRotation(int number) {
-  const size_t ten = 10;
-  const size_t thousand = 1000;
-  int temp = number / thousand + ten * (number / ten);
-  return temp;
-}
-
 void FillEdge(Graph& g) {
-  int first_number, second_number;
-  std::cin >> first_number >> second_number;
-
-  std::vector<int> numbers;
-  numbers.push_back(first_number);
-
+  int n;
+  size_t vertex_count = g.getVertexCount();
+  for (int i = 1; i < vertex_count + 1; ++i) {
+    for (int j = 1; j < vertex_count + 1; ++j) {
+      std::cin >> n;
+      if (n == 1) {
+        g.AddEdge(i, j);
+      }
+    }
+  }
 }
 
 bool BFS(const GraphAdjList& g, std::vector<int>& prev, const Graph::Vertex& start_vertex,
@@ -120,12 +88,46 @@ bool BFS(const GraphAdjList& g, std::vector<int>& prev, const Graph::Vertex& sta
   }
   return dist[finish_vertex] != -1;
 }
+
+std::vector<Graph::Vertex> FindPath(const GraphAdjList& g) {
+  Graph::Vertex start_vertex, finish_vertex;
+  std::cin >> start_vertex >> finish_vertex;
+  std::vector<int> prev(g.getVertexCount() + 1, 0);
+
+  bool is_path_existed = BFS(g, prev, start_vertex, finish_vertex);
+  std::vector<Graph::Vertex> path;
+  if (is_path_existed) {
+    while (finish_vertex != start_vertex) {
+      path.push_back(finish_vertex);
+      finish_vertex = prev[finish_vertex];
+    }
+    path.push_back(start_vertex);
+  }
+  return path;
+}
+
 }
 
 
 int main() {
-  GraphAdjList adj_list = GraphAdjList();
+  int m;
+  std::cin >> m;
+
+  GraphAdjList adj_list = GraphAdjList(m);
   GraphProcessing::FillEdge(adj_list);
 
+  auto path = GraphProcessing::FindPath(adj_list);
+  if (path.empty()) {
+    std::cout << -1;
+  }
+  else {
+    size_t size = path.size() - 1;
+    std::cout << size << std::endl;
+    if (size != 0) {
+      for (auto it = path.rbegin(); it < path.rend(); ++it) {
+        std::cout << *it << ' ';
+      }
+    }
+  }
   return 0;
 }
