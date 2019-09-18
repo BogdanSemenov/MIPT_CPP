@@ -9,24 +9,22 @@ class Graph {
 
  public:
   typedef size_t Vertex;
-  explicit Graph(size_t vertex_count, size_t edge_count = 0, bool is_directed = false)
+  explicit Graph(size_t vertex_count, bool is_directed = false)
       : vertex_count_(vertex_count),
         is_directed_(is_directed),
-        edge_count_(edge_count) {}
+        edge_count_(0) {}
 
-  size_t getVertexCount() const {
+  size_t GetVertexCount() const {
     return vertex_count_;
   }
 
-  size_t getEdgeCount() const {
+  size_t GetEdgeCount() const {
     return edge_count_;
   }
 
-  bool getDirection() const {
+  bool GetDirection() const {
     return is_directed_;
   }
-
-  virtual void AddEdge(const Vertex& start, const Vertex& finish) = 0;
 
 };
 
@@ -34,66 +32,58 @@ class GraphAdjList : public Graph {
  private:
   std::vector<std::vector<Vertex>> adj_list_;
 
- public:
-  explicit GraphAdjList(size_t vertex_count)
-      : Graph(vertex_count),
-        adj_list_(vertex_count + 1) {}
-
-  void AddEdge(const Vertex& start, const Vertex& finish) override {
-    adj_list_[start].push_back(finish);
-    if (!is_directed_) {
-      adj_list_[finish].push_back(start);
-    }
-    ++edge_count_;
-  }
-
-  std::vector<Vertex> operator[](size_t input) const {
-    return adj_list_[input];
-  }
-};
-
-namespace GraphProcessing {
-void FillEdge(Graph& g) {
-  int n;
-  size_t vertex_count = g.getVertexCount();
-  for (int i = 1; i < vertex_count + 1; ++i) {
-    for (int j = 1; j < vertex_count + 1; ++j) {
-      std::cin >> n;
-      if (n == 1) {
-        g.AddEdge(i, j);
+  void DFS(const Vertex& vertex, std::vector<bool>& used) const {
+    used[vertex] = true;
+    for (auto u : adj_list_[vertex]) {
+      if (!used[u]) {
+        DFS(u, used);
       }
     }
   }
-}
 
-void DFS_visit(int vertex, const GraphAdjList& g, std::vector<bool>& used) {
-  used[vertex] = true;
-  for (auto i : g[vertex]) {
-    if (!used[i]) {
-      DFS_visit(i, g, used);
+ public:
+  explicit GraphAdjList(const std::vector<std::vector<Vertex>>& graph, bool is_directed)
+      : Graph(graph.size(), is_directed),
+        adj_list_(graph) {
+    for (int i = 1; i < vertex_count_ + 1; ++i) {
+      edge_count_ += graph[i].size();
+    }
+    if (!is_directed_) {
+      edge_count_ /= 2;
     }
   }
-}
 
-size_t CountVertex(const GraphAdjList& g, size_t vertex) {
-  std::vector<bool> used(g.getVertexCount() + 1, false);
-  DFS_visit(vertex, g, used);
-  size_t counter = 0;
-  for (auto i : used) {
-    counter += i;
-  }
-  return counter;
-}
-
-}
+  size_t CountComponentVertices(const Vertex& vertex) const {
+    std::vector<bool> used(vertex_count_ + 1, false);
+    DFS(vertex, used);
+    size_t component_vertices_cnt = 0;
+    for (Vertex v = 1; v < vertex_count_ + 1; v++) {
+      if (used[v]) {
+        ++component_vertices_cnt;
+      }
+    }
+    return component_vertices_cnt;
+    }
+};
 
 int main() {
-  int m, vertex;
-  std::cin >> m >> vertex;
+  size_t n;
+  Graph::Vertex vertex;
+  std::cin >> n >> vertex;
 
-  GraphAdjList adj_list = GraphAdjList(m);
-  GraphProcessing::FillEdge(adj_list);
-  std::cout << GraphProcessing::CountVertex(adj_list, vertex);
+  std::vector<std::vector<Graph::Vertex>> adj_list(n + 1);
+  size_t input;
+  for (int i = 1; i < n + 1; ++i) {
+    for (int j = 1; j < n + 1; ++j) {
+      std::cin >> input;
+      if (input == 1) {
+        adj_list[i].push_back(j);
+      }
+    }
+  }
+
+  GraphAdjList graph_adj_list = GraphAdjList(adj_list, false);
+  std::cout << graph_adj_list.CountComponentVertices(vertex);
 
   return 0;
 }

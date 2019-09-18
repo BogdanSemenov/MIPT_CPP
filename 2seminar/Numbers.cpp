@@ -2,99 +2,135 @@
 #include <vector>
 #include <queue>
 
+class Graph {
+ protected:
+  size_t vertex_count_;
+  size_t edge_count_;
+  bool is_directed_;
 
-int IncreaseFirstDigit(int number) {
-  const size_t thousand = 1000;
-  int temp = number;
-  if (number / thousand != 9) {
-    temp += thousand;
+ public:
+  typedef size_t Vertex;
+  explicit Graph(size_t vertex_count, bool is_directed)
+      : vertex_count_(vertex_count),
+        is_directed_(is_directed),
+        edge_count_(0) {}
+
+  size_t GetVertexCount() const {
+    return vertex_count_;
   }
-  return temp;
-}
 
-int DecreaseLastDigit(int number) {
-  const size_t ten = 10;
-  int temp = number;
-  if (number % ten != 1) {
-    --temp;
+  size_t GetEdgeCount() const {
+    return edge_count_;
   }
-  return temp;
-}
 
-int RightRotation(int number) {
-  const size_t ten = 10;
-  const size_t thousand = 1000;
-  int temp = number / ten + thousand * (number % ten);
-  return temp;
-}
-
-int LeftRotation(int number) {
-  const size_t ten = 10;
-  const size_t thousand = 1000;
-  int temp = number / thousand + ten * (number % thousand);
-  return temp;
-}
-
-void AddNumber(int curr, int input, std::vector<bool>& used,
-    std::vector<int>& prev, std::queue<int>& q) {
-  if (input != curr && !used[input]) {
-    used[input] = true;
-    q.push(input);
-    prev[input] = curr;
+  bool GetDirection() const {
+    return is_directed_;
   }
+};
+
+class GraphAdjList : public Graph {
+ private:
+  std::vector<std::vector<Vertex>> adj_list_;
+
+  void BFS(std::vector<Vertex>& prev, const Vertex& start, const Vertex& finish) const {
+    std::vector<int> dist(vertex_count_ + 1, -1);
+    std::queue<Vertex> q;
+    dist[start] = 0;
+    q.push(start);
+
+    while (!q.empty()) {
+      Vertex curr = q.front();
+      q.pop();
+      for (auto u : adj_list_[curr]) {
+        if (dist[u] == -1) {
+          dist[u] = dist[curr] + 1;
+          q.push(u);
+          prev[u] = curr;
+        }
+      }
+    }
+  }
+
+ public:
+  explicit GraphAdjList(const std::vector<std::vector<Vertex>>& graph, bool is_directed)
+      : Graph(graph.size(), is_directed),
+        adj_list_(graph) {
+    for (int i = 1; i < vertex_count_ + 1; ++i) {
+      edge_count_ += graph[i].size();
+    }
+    if (!is_directed_) {
+      edge_count_ /= 2;
+    }
+  }
+
+  std::vector<Vertex> FindMinPathVertices(const Vertex& start, const Vertex& finish) const {
+    std::vector<Vertex> prev(vertex_count_ + 1, 0);
+
+    BFS(prev, start, finish);
+    std::vector<Vertex> path;
+    Vertex temp = finish;
+    while (temp != 0) {
+      path.push_back(temp);
+      temp = prev[temp];
+    }
+    return { path.rbegin(), path.rend() };
+  }
+};
+
+std::vector<Graph::Vertex> GetNextVariants(const Graph::Vertex& vertex) {
+  std::vector<Graph::Vertex> next_variants;
+  size_t temp = vertex;
+  next_variants.push_back(vertex / 10 + 1000 * (vertex % 10));
+  next_variants.push_back(vertex / 1000 + 10 * (vertex % 1000));
+  if (vertex % 10 != 1) {
+    next_variants.push_back(--temp);
+  }
+  temp = vertex;
+  if (vertex / 1000 != 9) {
+    temp += 1000;
+    next_variants.push_back(temp);
+  }
+
+  return next_variants;
 }
 
-void BFS(int first_number, int second_number, std::vector<int>& prev) {
-  const size_t MAX_SIZE = 10000;
-  std::vector<bool> used(MAX_SIZE, false);
-  std::queue<int> q;
-  q.push(first_number);
-  used[first_number] = true;
-  int first = 0;
-  int second = 0;
-  int third = 0;
-  int fourth = 0;
-
-  while (!used[second_number]) {
-    int curr = q.front();
+void FillAdjList(std::vector<std::vector<Graph::Vertex>>& adj_list, const Graph::Vertex& first,
+                 const Graph::Vertex& second, const size_t MAX_SIZE) {
+  std::vector<bool> visited(MAX_SIZE, false);
+  std::queue<Graph::Vertex> q;
+  q.push(first);
+  while (!visited[second]) {
+    size_t curr = q.front();
     q.pop();
-
-    first = IncreaseFirstDigit(curr);
-    second = DecreaseLastDigit(curr);
-    third = RightRotation(curr);
-    fourth = LeftRotation(curr);
-    AddNumber(curr, first, used, prev, q);
-    AddNumber(curr, second, used, prev, q);
-    AddNumber(curr, third, used, prev, q);
-    AddNumber(curr, fourth, used, prev, q);
+    auto next_variants = GetNextVariants(curr);
+    visited[curr] = true;
+    adj_list[curr] = next_variants;
+    for (auto neighbor : adj_list[curr]) {
+      if (!visited[neighbor]) {
+        next_variants = GetNextVariants(neighbor);
+        visited[neighbor] = true;
+        adj_list[neighbor] = next_variants;
+        q.push(neighbor);
+      }
+    }
   }
 }
-
-std::vector<int> FindPath() {
-  const size_t MAX_SIZE = 10000;
-  int first_number = 0;
-  int second_number = 0;
-  std::cin >> first_number >> second_number;
-
-  std::vector<int> prev(MAX_SIZE, -1);
-
-  BFS(first_number, second_number, prev);
-
-  std::vector<int> path;
-  while (second_number != -1) {
-    path.push_back(second_number);
-    second_number = prev[second_number];
-  }
-
-  return { path.rbegin(), path.rend() };
-}
-
 
 int main() {
-  auto vec = FindPath();
+  const size_t MAX_SIZE = 10000;
+  Graph::Vertex first, second;
+  std::cin >> first >> second;
 
-  for (auto i = vec.begin(); i < vec.end(); ++i) {
-    std::cout << *i << std::endl;
+  std::vector<std::vector<Graph::Vertex>> adj_list(MAX_SIZE);
+
+  FillAdjList(adj_list, first, second, MAX_SIZE);
+
+  GraphAdjList graph_adj_list = GraphAdjList(adj_list, false);
+
+  auto min_path_vertices = graph_adj_list.FindMinPathVertices(first, second);
+
+  for (auto i : min_path_vertices) {
+    std::cout << i << std::endl;
   }
 
   return 0;
