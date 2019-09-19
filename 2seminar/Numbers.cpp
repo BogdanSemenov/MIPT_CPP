@@ -26,6 +26,8 @@ class Graph {
   bool GetDirection() const {
     return is_directed_;
   }
+
+  virtual void AddEdge(const Vertex& start, const Vertex& finish) = 0;
 };
 
 class GraphAdjList : public Graph {
@@ -52,15 +54,16 @@ class GraphAdjList : public Graph {
   }
 
  public:
-  explicit GraphAdjList(const std::vector<std::vector<Vertex>>& graph, bool is_directed)
-      : Graph(graph.size(), is_directed),
-        adj_list_(graph) {
-    for (int i = 1; i < vertex_count_ + 1; ++i) {
-      edge_count_ += graph[i].size();
-    }
+  explicit GraphAdjList(size_t vertex_count, bool is_directed)
+      : Graph(vertex_count, is_directed),
+        adj_list_(vertex_count + 1) {}
+
+  void AddEdge(const Vertex& start, const Vertex& finish) override {
+    adj_list_[start].push_back(finish);
     if (!is_directed_) {
-      edge_count_ /= 2;
+      adj_list_[finish].push_back(start);
     }
+    ++edge_count_;
   }
 
   std::vector<Vertex> FindMinPathVertices(const Vertex& start, const Vertex& finish) const {
@@ -77,55 +80,56 @@ class GraphAdjList : public Graph {
   }
 };
 
+Graph::Vertex IncreaseFirstDigit(Graph::Vertex vertex) {
+  return vertex += 1000;
+}
+
+Graph::Vertex DecreaseLastDigit(Graph::Vertex vertex) {
+  return --vertex;
+}
+
+Graph::Vertex LeftRotation(Graph::Vertex vertex) {
+  return vertex / 1000 + 10 * (vertex % 1000);
+}
+
+Graph::Vertex RightRotation(Graph::Vertex vertex) {
+  return vertex / 10 + 1000 * (vertex % 10);
+}
+
 std::vector<Graph::Vertex> GetNextVariants(const Graph::Vertex& vertex) {
   std::vector<Graph::Vertex> next_variants;
-  size_t temp = vertex;
-  next_variants.push_back(vertex / 10 + 1000 * (vertex % 10));
-  next_variants.push_back(vertex / 1000 + 10 * (vertex % 1000));
+  next_variants.push_back(LeftRotation(vertex));
+  next_variants.push_back(RightRotation(vertex));
   if (vertex % 10 != 1) {
-    next_variants.push_back(--temp);
+    next_variants.push_back(DecreaseLastDigit(vertex));
   }
-  temp = vertex;
   if (vertex / 1000 != 9) {
-    temp += 1000;
-    next_variants.push_back(temp);
+    next_variants.push_back(IncreaseFirstDigit(vertex));
   }
 
   return next_variants;
 }
 
-void FillAdjList(std::vector<std::vector<Graph::Vertex>>& adj_list, const Graph::Vertex& first,
-                 const Graph::Vertex& second, const size_t MAX_SIZE) {
-  std::vector<bool> visited(MAX_SIZE, false);
-  std::queue<Graph::Vertex> q;
-  q.push(first);
-  while (!visited[second]) {
-    size_t curr = q.front();
-    q.pop();
-    auto next_variants = GetNextVariants(curr);
-    visited[curr] = true;
-    adj_list[curr] = next_variants;
-    for (auto neighbor : adj_list[curr]) {
-      if (!visited[neighbor]) {
-        next_variants = GetNextVariants(neighbor);
-        visited[neighbor] = true;
-        adj_list[neighbor] = next_variants;
-        q.push(neighbor);
-      }
+void FillAdjList(GraphAdjList& graph_adj_list) {
+  const Graph::Vertex MIN_VERTEX = 1000;
+  const Graph::Vertex MAX_VERTEX = 9999;
+  for (Graph::Vertex i = MIN_VERTEX; i <= MAX_VERTEX; ++i) {
+    auto next_variants = GetNextVariants(i);
+    for (auto j : next_variants) {
+      graph_adj_list.AddEdge(i, j);
     }
   }
 }
 
 int main() {
   const size_t MAX_SIZE = 10000;
+
   Graph::Vertex first, second;
   std::cin >> first >> second;
 
-  std::vector<std::vector<Graph::Vertex>> adj_list(MAX_SIZE);
+  GraphAdjList graph_adj_list = GraphAdjList(MAX_SIZE, true);
 
-  FillAdjList(adj_list, first, second, MAX_SIZE);
-
-  GraphAdjList graph_adj_list = GraphAdjList(adj_list, false);
+  FillAdjList(graph_adj_list);
 
   auto min_path_vertices = graph_adj_list.FindMinPathVertices(first, second);
 

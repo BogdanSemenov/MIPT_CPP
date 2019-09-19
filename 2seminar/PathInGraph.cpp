@@ -26,6 +26,8 @@ class Graph {
   bool GetDirection() const {
     return is_directed_;
   }
+
+  virtual void AddEdge(const Vertex& start, const Vertex& finish) = 0;
 };
 
 class GraphAdjList : public Graph {
@@ -53,15 +55,16 @@ class GraphAdjList : public Graph {
   }
 
  public:
-  explicit GraphAdjList(const std::vector<std::vector<Vertex>>& graph, bool is_directed)
-      : Graph(graph.size(), is_directed),
-        adj_list_(graph) {
-    for (int i = 1; i < vertex_count_ + 1; ++i) {
-      edge_count_ += graph[i].size();
-    }
+  explicit GraphAdjList(size_t vertex_count, bool is_directed)
+      : Graph(vertex_count, is_directed),
+        adj_list_(vertex_count + 1) {}
+
+  void AddEdge(const Vertex& start, const Vertex& finish) override {
+    adj_list_[start].push_back(finish);
     if (!is_directed_) {
-      edge_count_ /= 2;
+      adj_list_[finish].push_back(start);
     }
+    ++edge_count_;
   }
 
   std::vector<Vertex> FindMinPathVertices(const Vertex& start, const Vertex& finish) const {
@@ -71,7 +74,8 @@ class GraphAdjList : public Graph {
     std::vector<Vertex> path;
     if (path_exists) {
       Vertex temp = finish;
-      while (temp != 0) {
+      const size_t NOT_PREV_ELEMENT = 0;
+      while (temp != NOT_PREV_ELEMENT) {
         path.push_back(temp);
         temp = prev[temp];
       }
@@ -87,17 +91,18 @@ int main() {
   Graph::Vertex start, finish;
   std::cin >> n;
 
-  std::vector<std::vector<Graph::Vertex>> adj_list(n + 1);
-  size_t input;
+  GraphAdjList graph_adj_list = GraphAdjList(n, false);
+
   for (int i = 1; i < n + 1; ++i) {
     for (int j = 1; j < n + 1; ++j) {
+      size_t input;
       std::cin >> input;
       if (input == 1) {
-        adj_list[i].push_back(j);
+        graph_adj_list.AddEdge(i, j);
       }
     }
   }
-  GraphAdjList graph_adj_list = GraphAdjList(adj_list, false);
+
   std::cin >> start >> finish;
   auto min_path_vertices = graph_adj_list.FindMinPathVertices(start, finish);
 
