@@ -111,25 +111,27 @@ std::vector<Graph::Vertex> GetNextVariants(const Graph::Vertex& vertex) {
   return next_variants;
 }
 
-void FillAdjList(GraphAdjList& graph_adj_list, const size_t MAX_SIZE, const size_t MIN_VERTEX) {
+GraphAdjList FillAdjList() {
+  const size_t MAX_SIZE = 10000;
+  const Graph::Vertex MIN_VERTEX = 1000;
+
+  GraphAdjList graph_adj_list = GraphAdjList(MAX_SIZE, true);
   for (Graph::Vertex vertex = MIN_VERTEX; vertex < MAX_SIZE; ++vertex) {
     auto next_variants = GetNextVariants(vertex);
     for (Graph::Vertex neighbor : next_variants) {
       graph_adj_list.AddEdge(vertex, neighbor);
     }
   }
+
+  return graph_adj_list;
 }
 
 int main() {
-  const size_t MAX_SIZE = 10000;
-  const Graph::Vertex MIN_VERTEX = 1000;
 
   Graph::Vertex first, second;
   std::cin >> first >> second;
 
-  GraphAdjList graph_adj_list = GraphAdjList(MAX_SIZE, true);
-
-  FillAdjList(graph_adj_list, MAX_SIZE, MIN_VERTEX);
+  GraphAdjList graph_adj_list = FillAdjList();
 
   auto min_path_vertices = graph_adj_list.FindMinPathVertices(first, second);
 
