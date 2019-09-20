@@ -67,12 +67,13 @@ class GraphAdjList : public Graph {
   }
 
   std::vector<Vertex> FindMinPathVertices(const Vertex& start, const Vertex& finish) const {
-    std::vector<Vertex> prev(vertex_count_ + 1, 0);
+    const size_t NOT_SET = 0;
+    std::vector<Vertex> prev(vertex_count_ + 1, NOT_SET);
 
     BFS(prev, start, finish);
     std::vector<Vertex> path;
     Vertex temp = finish;
-    while (temp != 0) {
+    while (temp != NOT_SET) {
       path.push_back(temp);
       temp = prev[temp];
     }
@@ -88,11 +89,11 @@ Graph::Vertex DecreaseLastDigit(Graph::Vertex vertex) {
   return --vertex;
 }
 
-Graph::Vertex LeftRotation(Graph::Vertex vertex) {
+Graph::Vertex LeftRotation(const Graph::Vertex& vertex) {
   return vertex / 1000 + 10 * (vertex % 1000);
 }
 
-Graph::Vertex RightRotation(Graph::Vertex vertex) {
+Graph::Vertex RightRotation(const Graph::Vertex& vertex) {
   return vertex / 10 + 1000 * (vertex % 10);
 }
 
@@ -110,26 +111,25 @@ std::vector<Graph::Vertex> GetNextVariants(const Graph::Vertex& vertex) {
   return next_variants;
 }
 
-void FillAdjList(GraphAdjList& graph_adj_list) {
-  const Graph::Vertex MIN_VERTEX = 1000;
-  const Graph::Vertex MAX_VERTEX = 9999;
-  for (Graph::Vertex i = MIN_VERTEX; i <= MAX_VERTEX; ++i) {
-    auto next_variants = GetNextVariants(i);
-    for (auto j : next_variants) {
-      graph_adj_list.AddEdge(i, j);
+void FillAdjList(GraphAdjList& graph_adj_list, const size_t MAX_SIZE, const size_t MIN_VERTEX) {
+  for (Graph::Vertex vertex = MIN_VERTEX; vertex < MAX_SIZE; ++vertex) {
+    auto next_variants = GetNextVariants(vertex);
+    for (Graph::Vertex neighbor : next_variants) {
+      graph_adj_list.AddEdge(vertex, neighbor);
     }
   }
 }
 
 int main() {
   const size_t MAX_SIZE = 10000;
+  const Graph::Vertex MIN_VERTEX = 1000;
 
   Graph::Vertex first, second;
   std::cin >> first >> second;
 
   GraphAdjList graph_adj_list = GraphAdjList(MAX_SIZE, true);
 
-  FillAdjList(graph_adj_list);
+  FillAdjList(graph_adj_list, MAX_SIZE, MIN_VERTEX);
 
   auto min_path_vertices = graph_adj_list.FindMinPathVertices(first, second);
 

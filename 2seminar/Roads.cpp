@@ -25,6 +25,7 @@ class Graph {
   bool IsDirected() const {
     return is_directed_;
   }
+
 };
 
 class GraphAdjMatrix : public Graph {
@@ -39,9 +40,6 @@ class GraphAdjMatrix : public Graph {
       for (int j = 1; j < vertex_count_ + 1; ++j) {
         edge_count_ += adj_matrix_[i][j];
       }
-    }
-    if (!is_directed) {
-      edge_count_ /= 2;
     }
   }
 };
@@ -59,7 +57,7 @@ int main() {
     }
   }
   GraphAdjMatrix graph_adj_matrix = GraphAdjMatrix(adj_matrix, false);
-  std::cout << graph_adj_matrix.GetEdgeCount();
+  std::cout << graph_adj_matrix.GetEdgeCount() / 2;
 
   return 0;
 }

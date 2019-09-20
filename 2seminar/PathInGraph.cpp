@@ -68,14 +68,14 @@ class GraphAdjList : public Graph {
   }
 
   std::vector<Vertex> FindMinPathVertices(const Vertex& start, const Vertex& finish) const {
-    std::vector<Vertex> prev(vertex_count_ + 1, 0);
+    const size_t NOT_SET = 0;
+    std::vector<Vertex> prev(vertex_count_ + 1, NOT_SET);
 
     bool path_exists = BFS(prev, start, finish);
     std::vector<Vertex> path;
     if (path_exists) {
       Vertex temp = finish;
-      const size_t NOT_PREV_ELEMENT = 0;
-      while (temp != NOT_PREV_ELEMENT) {
+      while (temp != NOT_SET) {
         path.push_back(temp);
         temp = prev[temp];
       }
