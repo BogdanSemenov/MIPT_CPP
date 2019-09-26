@@ -57,46 +57,46 @@ class GraphAdjList : public Graph {
 
 namespace GraphProcessing {
 
-enum Colors {
-  WHITE,
-  GREY,
-  BLACK
-};
+  enum Colors {
+    WHITE,
+    GREY,
+    BLACK
+  };
 
-bool DFS(const Graph &graph, const Graph::Vertex &vertex, std::vector<Colors> &visited,
-         std::vector<Graph::Vertex> &topsort) {
-  visited[vertex] = GREY;
-  for (Graph::Vertex u : graph.GetAllNeighbors(vertex)) {
-    if (visited[u] == WHITE) {
-      if (!DFS(graph, u, visited, topsort)) {
+  bool DFS(const Graph &graph, const Graph::Vertex &vertex, std::vector<Colors> &visited,
+           std::vector<Graph::Vertex> &topsort) {
+    visited[vertex] = GREY;
+    for (Graph::Vertex u : graph.GetAllNeighbors(vertex)) {
+      if (visited[u] == WHITE) {
+        if (!DFS(graph, u, visited, topsort)) {
+          return false;
+        }
+      } else if (visited[u] == GREY) {
         return false;
       }
-    } else if (visited[u] == GREY) {
-      return false;
     }
+    visited[vertex] = BLACK;
+    topsort.push_back(vertex);
+    return true;
   }
-  visited[vertex] = BLACK;
-  topsort.push_back(vertex);
-  return true;
-}
 
-std::vector<Graph::Vertex> TopSort(const Graph &graph) {
-  if (!graph.IsDirected()) {
-    return {};
-  }
-  std::vector<Graph::Vertex> topsort;
-  std::vector<Colors> visited(graph.GetVertexCount() + 1, WHITE);
+  std::vector<Graph::Vertex> TopSort(const Graph &graph) {
+    if (!graph.IsDirected()) {
+      return {};
+    }
+    std::vector<Graph::Vertex> topsort;
+    std::vector<Colors> visited(graph.GetVertexCount() + 1, WHITE);
 
-  for (Graph::Vertex vertex = 1; vertex < graph.GetVertexCount() + 1; ++vertex) {
-    if (visited[vertex] == WHITE) {
-      bool is_acyclic = DFS(graph, vertex, visited, topsort);
-      if (!is_acyclic) {
-        return {};
+    for (Graph::Vertex vertex = 1; vertex < graph.GetVertexCount() + 1; ++vertex) {
+      if (visited[vertex] == WHITE) {
+        bool is_acyclic = DFS(graph, vertex, visited, topsort);
+        if (!is_acyclic) {
+          return {};
+        }
       }
     }
+    return {topsort.rbegin(), topsort.rend()};
   }
-  return {topsort.rbegin(), topsort.rend()};
-}
 }
 
 int main() {
