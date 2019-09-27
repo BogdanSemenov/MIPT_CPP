@@ -63,12 +63,22 @@ namespace GraphProcessing {
     BLACK
   };
 
-  bool DFS(const Graph &graph, const Graph::Vertex &vertex, std::vector<Colors> &visited,
-           std::vector<Graph::Vertex> &topsort) {
+  void DFS_TopSort(const Graph &graph, const Graph::Vertex &vertex, std::vector<bool> &used,
+                   std::vector<Graph::Vertex> &topsort) {
+    used[vertex] = true;
+    for (Graph::Vertex u : graph.GetAllNeighbors(vertex)) {
+      if (!used[u]) {
+        DFS_TopSort(graph, u, used, topsort);
+      }
+    }
+    topsort.push_back(vertex);
+  }
+
+  bool DFS_IsCyclic(const Graph &graph, const Graph::Vertex &vertex, std::vector<Colors> &visited) {
     visited[vertex] = GREY;
     for (Graph::Vertex u : graph.GetAllNeighbors(vertex)) {
       if (visited[u] == WHITE) {
-        if (!DFS(graph, u, visited, topsort)) {
+        if (!DFS_IsCyclic(graph, u, visited)) {
           return false;
         }
       } else if (visited[u] == GREY) {
@@ -76,25 +86,33 @@ namespace GraphProcessing {
       }
     }
     visited[vertex] = BLACK;
-    topsort.push_back(vertex);
     return true;
   }
 
-  std::vector<Graph::Vertex> TopSort(const Graph &graph) {
-    if (!graph.IsDirected()) {
-      return {};
-    }
-    std::vector<Graph::Vertex> topsort;
+  bool IsCyclic(const Graph &graph) {
     std::vector<Colors> visited(graph.GetVertexCount() + 1, WHITE);
-
     for (Graph::Vertex vertex = 1; vertex < graph.GetVertexCount() + 1; ++vertex) {
       if (visited[vertex] == WHITE) {
-        bool is_acyclic = DFS(graph, vertex, visited, topsort);
-        if (!is_acyclic) {
-          return {};
+        if (!DFS_IsCyclic(graph, vertex, visited)) {
+          return true;
         }
       }
     }
+    return false;
+  }
+
+  std::vector<Graph::Vertex> TopSort(const Graph &graph) {
+    if (!graph.IsDirected() || IsCyclic(graph)) {
+      return {};
+    }
+    std::vector<bool> used(graph.GetVertexCount() + 1, false);
+    std::vector<Graph::Vertex> topsort;
+    for (Graph::Vertex vertex = 1; vertex < graph.GetVertexCount() + 1; ++vertex) {
+      if (!used[vertex]) {
+        DFS_TopSort(graph, vertex, used, topsort);
+      }
+    }
+
     return {topsort.rbegin(), topsort.rend()};
   }
 }
