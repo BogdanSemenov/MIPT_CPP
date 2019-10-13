@@ -29,19 +29,19 @@ class DSU {
   std::map<T, size_t> rank;
   std::map<T, T> prev;
 
+  T FindSet(T elem) {
+    if (elem == prev[elem]) {
+      return elem;
+    }
+    return prev[elem] = FindSet(prev[elem]);
+  }
+
  public:
   explicit DSU(std::vector<T> elements) {
     for (int i = 0; i < elements.size(); ++i) {
       prev[elements[i]] = elements[i];
       rank[elements[i]] = 0;
     }
-  }
-
-  T FindSet(T elem) {
-    if (elem == prev[elem]) {
-      return elem;
-    }
-    return prev[elem] = FindSet(prev[elem]);
   }
 
   void Union(T x, T y) {
@@ -60,31 +60,32 @@ class DSU {
     }
   }
 
-  bool IsOneSet(T x, T y) {
+  bool InSameSet(T x, T y) {
     return FindSet(x) == FindSet(y);
   }
 };
 
 int main() {
-  int n, m;
-  std::cin >> n >> m;
+  size_t island_num, bridges_num;
+  std::cin >> island_num >> bridges_num;
   std::vector<int> v;
-  for (int i = 1; i <= n; ++i) {
+  for (int i = 1; i <= island_num; ++i) {
     v.push_back(i);
   }
 
   DSU<int> dsu(v);
-  int necessary_bridges_number = n;
-  for (int i = 1; i <= m; ++i) {
-    int a, b;
-    std::cin >> a >> b;
-    if (!dsu.IsOneSet(a, b)) {
-      dsu.Union(a, b);
-      if (--necessary_bridges_number == 1) {
+  size_t disjoint_sets_counter = island_num;
+  for (int i = 1; i <= bridges_num; ++i) {
+    int first, second;
+    std::cin >> first >> second;
+    if (!dsu.InSameSet(first, second)) {
+      dsu.Union(first, second);
+      if (--disjoint_sets_counter == 1) {
         std::cout << i;
         break;
       }
     }
   }
+
   return 0;
 }
