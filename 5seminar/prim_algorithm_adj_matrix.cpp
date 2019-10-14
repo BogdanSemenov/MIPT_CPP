@@ -26,6 +26,7 @@ class Graph {
 
  public:
   typedef size_t Vertex;
+  typedef std::pair<Graph::Vertex, Graph::Vertex> Edge;
 
   explicit Graph(size_t vertex_count, bool is_directed)
       : vertex_count_(vertex_count),
@@ -44,9 +45,11 @@ class Graph {
     return is_directed_;
   }
 
-  virtual void AddEdge(const Vertex &start, const Vertex &finish) = 0;
+  virtual void AddEdge(const Vertex &start, const Vertex &finish, size_t weight = 1) = 0;
 
   virtual bool HasEdge(const Vertex &start, const Vertex &finish) const = 0;
+
+  virtual size_t GetWeight(const Vertex &start, const Vertex &finish) const = 0;
 
   virtual std::vector<Vertex> GetAllNeighbors(const Vertex &vertex) const = 0;
 };
@@ -60,10 +63,10 @@ class GraphAdjMatrix : public Graph {
       : Graph(vertex_count, is_directed),
         adj_matrix_(vertex_count + 1, std::vector<int>(vertex_count + 1, 0)) {}
 
-  void AddEdge(const Vertex &start, const Vertex &finish) override {
-    ++adj_matrix_[start][finish];
+  void AddEdge(const Vertex &start, const Vertex &finish, size_t weight = 1) override {
+    adj_matrix_[start][finish] = weight;
     if (!is_directed_) {
-      ++adj_matrix_[finish][start];
+      adj_matrix_[finish][start] = weight;
     }
     ++edge_count_;
   }
@@ -81,69 +84,54 @@ class GraphAdjMatrix : public Graph {
     }
     return result;
   }
-};
 
-class WeightedGraphAdjMatrix : public GraphAdjMatrix {
- private:
-  std::map<std::pair<Graph::Vertex, Graph::Vertex>, size_t> edge_weight_;
-
- public:
-  explicit WeightedGraphAdjMatrix(size_t vertex_count, bool is_directed)
-      : GraphAdjMatrix(vertex_count, is_directed) {}
-
-  void AddEdge(const Vertex &start, const Vertex &finish, size_t weight) {
-    GraphAdjMatrix::AddEdge(start, finish);
-    edge_weight_[{start, finish}] = weight;
-    if (!is_directed_) {
-      edge_weight_[{finish, start}] = weight;
-    }
-  }
-
-  size_t GetWeight(const Vertex &start, const Vertex &finish) const {
-    return edge_weight_.at({start, finish});
+  size_t GetWeight(const Vertex &start, const Vertex &finish) const override {
+    return adj_matrix_[start][finish];
   }
 };
 
 namespace GraphProcessing {
 
-  struct MinimalSpanningTreeStatus {
+  struct VerticesCondition {
     const size_t INF = std::numeric_limits<size_t>::max();
     const int NOT_SET = -1;
-    std::set<std::pair<Graph::Vertex, Graph::Vertex>> MST;
-    std::vector<size_t> min_neighbor_weight;
+    std::vector<Graph::Edge> MST;
+    std::vector<size_t> min_weight;
     std::vector<Graph::Vertex> parent;
     std::vector<bool> visited;
 
-    explicit MinimalSpanningTreeStatus(size_t vertex_count)
-        : min_neighbor_weight(vertex_count + 1, INF),
-          parent(vertex_count + 1, NOT_SET),
-          visited(vertex_count + 1, false) {}
+    explicit VerticesCondition(size_t vertex_count)
+        : min_weight(vertex_count + 1, INF),
+          visited(vertex_count + 1, false),
+          parent(vertex_count + 1, NOT_SET) {
+      min_weight[1] = 0; // for vertex 1 weight = 0
+    }
   };
 
-  std::set<std::pair<Graph::Vertex, Graph::Vertex>> Prim_Get_MST(const WeightedGraphAdjMatrix &graph) {
-    const size_t size = graph.GetVertexCount() + 1;
-    MinimalSpanningTreeStatus mst_status = MinimalSpanningTreeStatus(graph.GetVertexCount());
-    mst_status.min_neighbor_weight[1] = 0;
-    for (int i = 0; i < size - 1; ++i) {
-      Graph::Vertex vertex = mst_status.NOT_SET;
-      for (Graph::Vertex vertex_with_min_edge = 1; vertex_with_min_edge < size; ++vertex_with_min_edge) {
-        if (!mst_status.visited[vertex_with_min_edge] && (vertex == mst_status.NOT_SET ||
-            mst_status.min_neighbor_weight[vertex] > mst_status.min_neighbor_weight[vertex_with_min_edge])) {
-          vertex = vertex_with_min_edge;
+  std::vector<Graph::Edge> Prim_Get_MST(const Graph &graph) {
+    const size_t vertices_cnt = graph.GetVertexCount() + 1;
+    VerticesCondition vertices_condition = VerticesCondition(graph.GetVertexCount());
+    for (int i = 0; i < vertices_cnt - 1; ++i) {
+      Graph::Vertex vertex_with_min_edge = vertices_condition.NOT_SET;
+      for (Graph::Vertex vertex = 1; vertex < vertices_cnt; ++vertex) {
+        if (!vertices_condition.visited[vertex] && (vertex_with_min_edge == vertices_condition.NOT_SET ||
+            vertices_condition.min_weight[vertex_with_min_edge] > vertices_condition.min_weight[vertex])) {
+          vertex_with_min_edge = vertex;
         }
       }
-      mst_status.visited[vertex] = true;
-      if (mst_status.parent[vertex] != mst_status.NOT_SET) {
-        mst_status.MST.insert(std::minmax(mst_status.parent[vertex], vertex));
+      vertices_condition.visited[vertex_with_min_edge] = true;
+      if (vertices_condition.parent[vertex_with_min_edge] != vertices_condition.NOT_SET) {
+        vertices_condition.MST.emplace_back(std::minmax(vertices_condition.parent[vertex_with_min_edge],
+            vertex_with_min_edge));
       }
-      for (const Graph::Vertex &neighbor : graph.GetAllNeighbors(vertex)) {
-        if (mst_status.min_neighbor_weight[neighbor] > graph.GetWeight(neighbor, vertex)) {
-          mst_status.min_neighbor_weight[neighbor] = graph.GetWeight(neighbor, vertex);
-          mst_status.parent[neighbor] = vertex;
+      for (const Graph::Vertex &neighbor : graph.GetAllNeighbors(vertex_with_min_edge)) {
+        if (vertices_condition.min_weight[neighbor] > graph.GetWeight(neighbor, vertex_with_min_edge)) {
+          vertices_condition.min_weight[neighbor] = graph.GetWeight(neighbor, vertex_with_min_edge);
+          vertices_condition.parent[neighbor] = vertex_with_min_edge;
         }
       }
     }
-    return mst_status.MST;
+    return vertices_condition.MST;
   }
 }
 
@@ -151,19 +139,19 @@ int main() {
   size_t n, m;
 
   std::cin >> n >> m;
-  WeightedGraphAdjMatrix weighted_graph_adj_matrix = WeightedGraphAdjMatrix(n, false);
+  GraphAdjMatrix graph_adj_matrix = GraphAdjMatrix(n, false);
 
   for (int i = 0; i < m; ++i) {
     Graph::Vertex start, finish;
     size_t weight;
     std::cin >> start >> finish >> weight;
-    weighted_graph_adj_matrix.AddEdge(start, finish, weight);
+    graph_adj_matrix.AddEdge(start, finish, weight);
   }
-  auto MST = GraphProcessing::Prim_Get_MST(weighted_graph_adj_matrix);
+  auto MST = GraphProcessing::Prim_Get_MST(graph_adj_matrix);
 
   size_t MST_weight = 0;
   for (const auto &edge : MST) {
-    MST_weight += weighted_graph_adj_matrix.GetWeight(edge.first, edge.second);
+    MST_weight += graph_adj_matrix.GetWeight(edge.first, edge.second);
   }
   std::cout << MST_weight;
 

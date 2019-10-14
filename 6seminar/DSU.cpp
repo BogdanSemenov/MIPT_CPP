@@ -26,37 +26,37 @@
 template <typename T>
 class DSU {
  private:
-  std::map<T, size_t> rank;
-  std::map<T, T> prev;
+  std::map<T, size_t> rank_;
+  std::map<T, T> predecessors_;
 
-  T FindSet(T elem) {
-    if (elem == prev[elem]) {
-      return elem;
+  T FindSet(T x) {
+    if (x == predecessors_[x]) {
+      return x;
     }
-    return prev[elem] = FindSet(prev[elem]);
+    return predecessors_[x] = FindSet(predecessors_[x]);
   }
 
  public:
   explicit DSU(std::vector<T> elements) {
     for (int i = 0; i < elements.size(); ++i) {
-      prev[elements[i]] = elements[i];
-      rank[elements[i]] = 0;
+      predecessors_[elements[i]] = elements[i];
+      rank_[elements[i]] = 0;
     }
   }
 
   void Union(T x, T y) {
-    T x_parent = FindSet(x);
-    T y_parent = FindSet(y);
+    T x_predecessor = FindSet(x);
+    T y_predecessor = FindSet(y);
 
-    if (x_parent == y_parent) {
+    if (x_predecessor == y_predecessor) {
       return;
     }
-    if (rank[x_parent] < rank[y_parent]) {
-      std::swap(x_parent, y_parent);
+    if (rank_[x_predecessor] < rank_[y_predecessor]) {
+      std::swap(x_predecessor, y_predecessor);
     }
-    prev[y_parent] = x_parent;
-    if (rank[x_parent] == rank[y_parent]) {
-      ++rank[x_parent];
+    predecessors_[y_predecessor] = x_predecessor;
+    if (rank_[x_predecessor] == rank_[y_predecessor]) {
+      ++rank_[x_predecessor];
     }
   }
 

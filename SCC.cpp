@@ -20,6 +20,8 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <set>
+#include <memory>
 
 class Graph {
  protected:
@@ -51,7 +53,7 @@ class Graph {
 
   virtual std::vector<Vertex> GetAllNeighbors(const Vertex &vertex) const = 0;
 
-  virtual void Transpose() = 0;
+  virtual std::shared_ptr<Graph> Transpose() const = 0;
 };
 
 class GraphAdjList : public Graph {
@@ -75,35 +77,37 @@ class GraphAdjList : public Graph {
     return adj_list_[vertex];
   }
 
-  void Transpose() override {
+  std::shared_ptr<Graph> Transpose() const override {
+    auto graph_adj_list = std::make_shared<GraphAdjList>(vertex_count_, is_directed_);
     std::vector<std::vector<Vertex>> temp(vertex_count_ + 1);
-    for (int i = 1; i < vertex_count_ + 1; ++i) {
-      const size_t size = adj_list_[i].size();
-      for (int j = 0; j < size; ++j) {
-        temp[adj_list_[i][j]].push_back(i);
+    for (Vertex vertex = 1; vertex < vertex_count_ + 1; ++vertex) {
+      const size_t size = adj_list_[vertex].size();
+      for (int i = 0; i < size; ++i) {
+        temp[adj_list_[vertex][i]].push_back(vertex);
       }
     }
-    adj_list_ = temp;
+    graph_adj_list->adj_list_ = temp;
+    return graph_adj_list;
   }
 };
 
 namespace GraphProcessing {
 
-  void DFS_SetOrder(const Graph &graph, const Graph::Vertex &vertex, std::vector<bool> &used,
-                    std::vector<Graph::Vertex> &order) {
+  void DFS_EnumerateVertices(const Graph &graph, const Graph::Vertex &vertex,
+      std::vector<bool> &used, std::vector<Graph::Vertex> &order) {
     used[vertex] = true;
     for (Graph::Vertex u : graph.GetAllNeighbors(vertex)) {
       if (!used[u]) {
-        DFS_SetOrder(graph, u, used, order);
+        DFS_EnumerateVertices(graph, u, used, order);
       }
     }
     order.push_back(vertex);
   }
 
   void DFS_GetSCC(const Graph &graph, const Graph::Vertex &vertex, std::vector<bool> &used,
-                  std::vector<Graph::Vertex> &component) {
+                  std::set<Graph::Vertex> &component) {
     used[vertex] = true;
-    component.push_back(vertex);
+    component.insert(vertex);
     for (Graph::Vertex u : graph.GetAllNeighbors(vertex)) {
       if (!used[u]) {
         DFS_GetSCC(graph, u, used, component);
@@ -111,29 +115,29 @@ namespace GraphProcessing {
     }
   }
 
-  std::vector<Graph::Vertex> SetOrder(const Graph &graph) {
+  std::vector<Graph::Vertex> EnumerateVertices(const Graph &graph) {
     const size_t size = graph.GetVertexCount() + 1;
     std::vector<bool> used(size, false);
     std::vector<Graph::Vertex> order;
     for (Graph::Vertex vertex = 1; vertex < size; ++vertex) {
       if (!used[vertex]) {
-        DFS_SetOrder(graph, vertex, used, order);
+        DFS_EnumerateVertices(graph, vertex, used, order);
       }
     }
     return {order.rbegin(), order.rend()};
   }
 
-  std::vector<std::vector<Graph::Vertex>> GetStronglyConnectedComponents(Graph &graph) {
+  std::vector<std::set<Graph::Vertex>> GetStronglyConnectedComponents(const Graph &graph) {
     const size_t size = graph.GetVertexCount() + 1;
     std::vector<bool> used(size, false);
-    std::vector<Graph::Vertex> order = SetOrder(graph);
-    graph.Transpose();
-    std::vector<Graph::Vertex> component;
-    std::vector<std::vector<Graph::Vertex>> strongly_connected_components;
-    for (Graph::Vertex vertex : order) {
+    std::vector<Graph::Vertex> descending_order_vertices = EnumerateVertices(graph);
+    auto transposed_graph = graph.Transpose();
+    std::set<Graph::Vertex> component;
+    std::vector<std::set<Graph::Vertex>> strongly_connected_components;
+    for (Graph::Vertex vertex : descending_order_vertices) {
       if (!used[vertex]) {
         component.clear();
-        DFS_GetSCC(graph, vertex, used, component);
+        DFS_GetSCC(*transposed_graph, vertex, used, component);
         strongly_connected_components.emplace_back(component);
       }
     }
@@ -152,15 +156,14 @@ int main() {
     graph_adj_list.AddEdge(first, second);
   }
 
-  auto scc_vertices = GraphProcessing::GetStronglyConnectedComponents(graph_adj_list);
+  auto strongly_connected_components = GraphProcessing::GetStronglyConnectedComponents(graph_adj_list);
 
-  const size_t scc_size = scc_vertices.size();
+  const size_t scc_cnt = strongly_connected_components.size();
   const size_t vertex_count = graph_adj_list.GetVertexCount() + 1;
-  std::cout << scc_size << std::endl;
+  std::cout << scc_cnt << std::endl;
   for (Graph::Vertex vertex = 1; vertex < vertex_count; ++vertex) {
-    for (int i = 0; i < scc_size; ++i) {
-      if (std::find(scc_vertices[i].begin(), scc_vertices[i].end(), vertex)
-          != scc_vertices[i].end()) {
+    for (int i = 0; i < scc_cnt; ++i) {
+      if (strongly_connected_components[i].find(vertex) != strongly_connected_components[i].end()) {
         std::cout << i + 1 << ' ';
       }
     }
