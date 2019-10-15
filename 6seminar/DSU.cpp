@@ -29,7 +29,7 @@ class DSU {
   std::map<T, size_t> rank_;
   std::map<T, T> predecessors_;
 
-  T FindSet(T x) {
+  T FindSet(const T &x) {
     if (x == predecessors_[x]) {
       return x;
     }
@@ -37,14 +37,14 @@ class DSU {
   }
 
  public:
-  explicit DSU(std::vector<T> elements) {
+  explicit DSU(const std::vector<T> &elements) {
     for (int i = 0; i < elements.size(); ++i) {
       predecessors_[elements[i]] = elements[i];
       rank_[elements[i]] = 0;
     }
   }
 
-  void Union(T x, T y) {
+  void Union(const T &x, const T &y) {
     T x_predecessor = FindSet(x);
     T y_predecessor = FindSet(y);
 
@@ -60,7 +60,7 @@ class DSU {
     }
   }
 
-  bool InSameSet(T x, T y) {
+  bool InSameSet(const T &x, const T &y) {
     return FindSet(x) == FindSet(y);
   }
 };
