@@ -1,25 +1,24 @@
-/* Дан неориентированный граф. Требуется найти все мосты в нём.
+/* Дан неориентированный граф. Требуется найти все точки сочленения в нём.
 
 Входные данные
 
 Первая строка входного файла содержит два натуральных числа n и m — количества вершин
- и рёбер графа соответственно (1 ≤ n ≤ 20 000, 1 ≤ m ≤ 200 000).
+ и рёбер графа соответственно (1 <= n <= 20000 , 1 <= m <= 200000 ).
 
 Следующие m строк содержат описание рёбер по одному на строке.
- Ребро номер i описывается двумя натуральными числами b_i, e_i — номерами концов ребра
- (1 ≤ b_i, e_i ≤ n).
+ Ребро номер i описывается двумя натуральными числами b_i, e_i — номерами концов
+ ребра (1 <= b_i, e_i <= n).
 
 Выходные данные
 
-Первая строка выходного файла должна содержать одно натуральное число b — количество мостов
- в заданном графе. На следующей строке выведите b целых чисел — номера рёбер,
- которые являются мостами, в возрастающем порядке. Рёбра нумеруются с единицы в том порядке,
- в котором они заданы во входном файле.
- */
+Первая строка выходного файла должна содержать одно натуральное число b
+ — количество точек сочленения в заданном графе.
+ На следующей строке выведите b целых чисел — номера вершин, которые являются точками сочленения,
+ в возрастающем порядке.
+*/
 
 #include <iostream>
 #include <vector>
-#include <map>
 #include <set>
 #include <algorithm>
 #include <string>
@@ -53,6 +52,7 @@ class Graph {
   virtual void AddEdge(const Vertex &start, const Vertex &finish) = 0;
 
   virtual std::vector<Vertex> GetAllNeighbors(const Vertex &vertex) const = 0;
+
 };
 
 class GraphAdjList : public Graph {
@@ -79,17 +79,15 @@ class GraphAdjList : public Graph {
 
 namespace GraphProcessing {
 
-  typedef std::pair<Graph::Vertex, Graph::Vertex> Edge;
-
   struct VerticesCondition {
     std::vector<bool> visited;
     std::vector<size_t> time_in;
     std::vector<size_t> time_up;
     size_t time;
-    std::set<Edge> bridges;
+    std::set<Graph::Vertex> cut_vertices;
 
-    explicit VerticesCondition(size_t vertex_count) :
-        visited(vertex_count + 1, false),
+    explicit VerticesCondition(size_t vertex_count)
+    :   visited(vertex_count + 1, false),
         time_in(vertex_count + 1, 0),
         time_up(vertex_count + 1, 0),
         time(0) {}
@@ -97,8 +95,10 @@ namespace GraphProcessing {
 
   void DFS(const Graph &graph, const Graph::Vertex &vertex,
            VerticesCondition &vertices_condition, const Graph::Vertex &predecessor) {
+    const bool is_root = (predecessor == vertex);
     vertices_condition.time_in[vertex] = vertices_condition.time_up[vertex] = ++vertices_condition.time;
     vertices_condition.visited[vertex] = true;
+    size_t children = 0;
     for (Graph::Vertex u : graph.GetAllNeighbors(vertex)) {
       if (u == predecessor) {
         continue;
@@ -108,18 +108,20 @@ namespace GraphProcessing {
             vertices_condition.time_in[u]);
       } else {
         DFS(graph, u, vertices_condition, vertex);
+        ++children;
         vertices_condition.time_up[vertex] = std::min(vertices_condition.time_up[vertex],
             vertices_condition.time_up[u]);
-        auto vertex_neighbors = graph.GetAllNeighbors(vertex);
-        bool not_multi_edge = (std::count(vertex_neighbors.begin(), vertex_neighbors.end(), u) == 1);
-        if (vertices_condition.time_up[u] > vertices_condition.time_in[vertex] && not_multi_edge) {
-          vertices_condition.bridges.insert({vertex, u});
+        if (!is_root && vertices_condition.time_up[u] >= vertices_condition.time_in[vertex]) {
+          vertices_condition.cut_vertices.insert(vertex);
         }
       }
     }
+    if (is_root && children >= 2) {
+      vertices_condition.cut_vertices.insert(vertex);
+    }
   }
 
-  std::set<Edge> GetBridges(const Graph &graph) {
+  std::set<Graph::Vertex> GetCutVertices(const Graph &graph) {
     const size_t vertex_count = graph.GetVertexCount();
     VerticesCondition vertices_condition = VerticesCondition(vertex_count);
     for (Graph::Vertex vertex = 1; vertex < vertex_count + 1; ++vertex) {
@@ -127,7 +129,7 @@ namespace GraphProcessing {
         DFS(graph, vertex, vertices_condition, vertex);
       }
     }
-    return vertices_condition.bridges;
+    return vertices_condition.cut_vertices;
   }
 }
 
@@ -136,22 +138,17 @@ int main() {
 
   std::cin >> n >> m;
   GraphAdjList graph_adj_list = GraphAdjList(n, false);
-  std::vector<GraphProcessing::Edge> edges;
 
-  for (int i = 1; i < m + 1; ++i) {
+  for (int i = 0; i < m; ++i) {
     Graph::Vertex start, finish;
     std::cin >> start >> finish;
     graph_adj_list.AddEdge(start, finish);
-    edges.emplace_back(start, finish);
   }
 
-  auto bridges = GraphProcessing::GetBridges(graph_adj_list);
-  std::cout << bridges.size() << std::endl;
-  for (int i = 0; i < edges.size(); ++i) {
-    if (bridges.find(edges[i]) != bridges.end() ||
-    bridges.find({edges[i].second, edges[i].first}) != bridges.end()) {
-      std::cout << i + 1 << ' ';
-    }
+  auto cut_vertices = GraphProcessing::GetCutVertices(graph_adj_list);
+  std::cout << cut_vertices.size() << std::endl;
+  for (auto cut_vertex : cut_vertices) {
+    std::cout << cut_vertex << std::endl;
   }
 
   return 0;
