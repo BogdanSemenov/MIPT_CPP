@@ -1,3 +1,21 @@
+/* Дан ориентированный граф, в котором могут быть кратные ребра и петли.
+ Каждое ребро имеет вес, выражающийся целым числом (возможно, отрицательным).
+ Гарантируется, что циклы отрицательного веса отсутствуют.
+Требуется посчитать длины кратчайших путей от вершины номер 1 до всех остальных вершин.
+
+Input format
+
+Программа получает сначала число N (1 ≤ N ≤ 100) – количество вершин графа и число M (0 ≤ M ≤ 10000)
+ – количество ребер. В следующих строках идет M троек чисел, описывающих ребра: начало ребра, конец
+ ребра и вес (вес – целое число от -100 до 100).
+
+Output format
+
+Программа должна вывести N чисел – расстояния от вершины номер 1 до всех вершин графа.
+ Если пути до соответствующей вершины не существует, вместо длины пути выведите число 30000.
+ */
+
+
 #include <iostream>
 #include <map>
 #include <vector>
@@ -65,15 +83,14 @@ class GraphAdjList : public Graph {
   }
 };
 
-
 namespace GraphProcessing {
 
-std::vector<size_t> Ford_Bellman(const Graph &graph, const Graph::Vertex &vertex) {
+  std::vector<size_t> FordBellmanForOneVertex(const Graph &graph, const Graph::Vertex &vertex) {
     const size_t MAX = 30000;
     std::vector<size_t> distances(graph.GetVertexCount() + 1, MAX);
     distances[vertex] = 0;
 
-    for (int i = 1; i <= graph.GetVertexCount(); ++i) {
+    for (int i = 1; i < graph.GetVertexCount(); ++i) {
       auto edges = graph.GetEdges();
       for (auto edge : edges) {
         if (distances[edge.from] != MAX && distances[edge.to] > distances[edge.from] + edge.weight) {
@@ -82,7 +99,7 @@ std::vector<size_t> Ford_Bellman(const Graph &graph, const Graph::Vertex &vertex
       }
     }
 
-  return distances;
+    return distances;
   }
 }
 
@@ -99,7 +116,7 @@ int main() {
     graph_adj_list.AddEdge(start, finish, weight);
   }
 
-  auto distances = GraphProcessing::Ford_Bellman(graph_adj_list, 1);
+  auto distances = GraphProcessing::FordBellmanForOneVertex(graph_adj_list, 1);
 
   for (int i = 1; i < distances.size(); ++i) {
     std::cout << distances[i] << ' ';
