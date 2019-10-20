@@ -108,18 +108,18 @@ namespace GraphProcessing {
 
     return {topsort.rbegin(), topsort.rend()};
   }
-}
 
-size_t MinNumberOfBrokenMoneyBoxes(const Graph &graph) {
-  std::vector<bool> visited(graph.GetVertexCount() + 1, false);
-  size_t money_boxes_cnt = 0;
-  for (Graph::Vertex vertex : GraphProcessing::TopSort(graph)) {
-    if (!visited[vertex]) {
-      GraphProcessing::DFS(graph, visited, vertex);
-      ++money_boxes_cnt;
+  size_t CountDFSVisiting(const Graph &graph) {
+    std::vector<bool> visited(graph.GetVertexCount() + 1, false);
+    size_t dfs_visiting_counter = 0;
+    for (Graph::Vertex vertex : TopSort(graph)) {
+      if (!visited[vertex]) {
+        GraphProcessing::DFS(graph, visited, vertex);
+        ++dfs_visiting_counter;
+      }
     }
+    return dfs_visiting_counter;
   }
-  return money_boxes_cnt;
 }
 
 int main() {
@@ -132,14 +132,7 @@ int main() {
     graph_adj_list.AddEdge(start, finish);
   }
 
-  std::cout << MinNumberOfBrokenMoneyBoxes(graph_adj_list) << std::endl;
+  std::cout << GraphProcessing::CountDFSVisiting(graph_adj_list) << std::endl;
 
   return 0;
 }
-
-/* Доказательство:
- Пройдя TopSort'ом мы получим вектор из вершин, ребра которых древесные, следовательно в начале у нас будет
- вершина, из которой все выходит. Разбив эту копилку, мы получим ключ к следующей копилке, к которой ведет ребро
- из разбитой. Значит мы можем разбить всего одну копилку за один проход DFS'ом по вершинам из TopSort'а.
- Значит сколько проходов мы сделаем, столько и получим разбитых копилок.
- */
