@@ -109,12 +109,12 @@ namespace GraphProcessing {
     return {topsort.rbegin(), topsort.rend()};
   }
 
-  size_t CountDFSVisiting(const Graph &graph) {
+  size_t CountComponentsOfTopSortedGraph(const Graph &graph) {
     std::vector<bool> visited(graph.GetVertexCount() + 1, false);
     size_t dfs_visiting_counter = 0;
     for (Graph::Vertex vertex : TopSort(graph)) {
       if (!visited[vertex]) {
-        GraphProcessing::DFS(graph, visited, vertex);
+        DFS(graph, visited, vertex);
         ++dfs_visiting_counter;
       }
     }
@@ -132,7 +132,7 @@ int main() {
     graph_adj_list.AddEdge(start, finish);
   }
 
-  std::cout << GraphProcessing::CountDFSVisiting(graph_adj_list) << std::endl;
+  std::cout << GraphProcessing::CountComponentsOfTopSortedGraph(graph_adj_list) << std::endl;
 
   return 0;
 }
