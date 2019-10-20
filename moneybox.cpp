@@ -73,18 +73,18 @@ class GraphAdjList : public Graph {
 
 namespace GraphProcessing {
 
-  void DFS_TopSort(const Graph &graph, std::vector<bool> &visited, std::vector<Graph::Vertex> &topsort,
+  void DFS_GraphSort(const Graph &graph, std::vector<bool> &visited, std::vector<Graph::Vertex> &sorted_graph,
                    const Graph::Vertex &vertex) {
     visited[vertex] = true;
     for (auto neighbor : graph.GetAllNeighbors(vertex)) {
       if (!visited[neighbor]) {
-        DFS_TopSort(graph, visited, topsort, neighbor);
+        DFS_GraphSort(graph, visited, sorted_graph, neighbor);
       }
     }
-
-    topsort.push_back(vertex);
+  
+    sorted_graph.push_back(vertex);
   }
-
+  
   void DFS(const Graph &graph, std::vector<bool> &visited, const Graph::Vertex &vertex) {
     visited[vertex] = true;
     for (auto neighbor : graph.GetAllNeighbors(vertex)) {
@@ -93,23 +93,23 @@ namespace GraphProcessing {
       }
     }
   }
-
+  
   std::vector<Graph::Vertex> TopSort(const Graph &graph) {
     if (!graph.IsDirected()) {
       return {};
     }
     std::vector<bool> visited(graph.GetVertexCount() + 1, false);
-    std::vector<Graph::Vertex> topsort;
+    std::vector<Graph::Vertex> sorted_graph;
     for (Graph::Vertex vertex = 1; vertex < graph.GetVertexCount() + 1; ++vertex) {
       if (!visited[vertex]) {
-        DFS_TopSort(graph, visited, topsort, vertex);
+        DFS_GraphSort(graph, visited, sorted_graph, vertex);
       }
     }
-
-    return {topsort.rbegin(), topsort.rend()};
+  
+    return {sorted_graph.rbegin(), sorted_graph.rend()};
   }
-
-  size_t CountComponentsOfTopSortedGraph(const Graph &graph) {
+  
+  size_t CountComponentsOfSortedGraph(const Graph &graph) {
     std::vector<bool> visited(graph.GetVertexCount() + 1, false);
     size_t dfs_visiting_counter = 0;
     for (Graph::Vertex vertex : TopSort(graph)) {
@@ -132,7 +132,7 @@ int main() {
     graph_adj_list.AddEdge(start, finish);
   }
 
-  std::cout << GraphProcessing::CountComponentsOfTopSortedGraph(graph_adj_list) << std::endl;
+  std::cout << GraphProcessing::CountComponentsOfSortedGraph(graph_adj_list) << std::endl;
 
   return 0;
 }
