@@ -32,6 +32,7 @@ class Graph {
 
  public:
   typedef size_t Vertex;
+  typedef std::pair<Graph::Vertex, Graph::Vertex> Edge;
 
   explicit Graph(size_t vertex_count, bool is_directed)
       : vertex_count_(vertex_count),
@@ -79,55 +80,51 @@ class GraphAdjList : public Graph {
 
 namespace GraphProcessing {
 
-  typedef std::pair<Graph::Vertex, Graph::Vertex> Edge;
-
-  struct VerticesCondition {
+  struct GraphStatus {
     std::vector<bool> visited;
     std::vector<size_t> time_in;
     std::vector<size_t> time_up;
     size_t time;
-    std::set<Edge> bridges;
+    std::set<Graph::Edge> bridges;
 
-    explicit VerticesCondition(size_t vertex_count) :
+    explicit GraphStatus(size_t vertex_count) :
         visited(vertex_count + 1, false),
         time_in(vertex_count + 1, 0),
         time_up(vertex_count + 1, 0),
         time(0) {}
   };
 
-  void DFS(const Graph &graph, const Graph::Vertex &vertex,
-           VerticesCondition &vertices_condition, const Graph::Vertex &predecessor) {
-    vertices_condition.time_in[vertex] = vertices_condition.time_up[vertex] = ++vertices_condition.time;
-    vertices_condition.visited[vertex] = true;
+  void DFS(const Graph &graph, const Graph::Vertex &vertex, GraphStatus &graph_status,
+           const std::map<Graph::Edge, int> &edge_index, const Graph::Vertex &predecessor) {
+    graph_status.time_in[vertex] = graph_status.time_up[vertex] = ++graph_status.time;
+    graph_status.visited[vertex] = true;
     for (Graph::Vertex u : graph.GetAllNeighbors(vertex)) {
       if (u == predecessor) {
         continue;
       }
-      if (vertices_condition.visited[u]) {
-        vertices_condition.time_up[vertex] = std::min(vertices_condition.time_up[vertex],
-            vertices_condition.time_in[u]);
+      if (graph_status.visited[u]) {
+        graph_status.time_up[vertex] = std::min(graph_status.time_up[vertex],
+                                                graph_status.time_in[u]);
       } else {
-        DFS(graph, u, vertices_condition, vertex);
-        vertices_condition.time_up[vertex] = std::min(vertices_condition.time_up[vertex],
-            vertices_condition.time_up[u]);
-        auto vertex_neighbors = graph.GetAllNeighbors(vertex);
-        bool not_multi_edge = (std::count(vertex_neighbors.begin(), vertex_neighbors.end(), u) == 1);
-        if (vertices_condition.time_up[u] > vertices_condition.time_in[vertex] && not_multi_edge) {
-          vertices_condition.bridges.insert({vertex, u});
+        DFS(graph, u, graph_status, edge_index, vertex);
+        graph_status.time_up[vertex] = std::min(graph_status.time_up[vertex],
+                                                graph_status.time_up[u]);
+        if (graph_status.time_up[u] > graph_status.time_in[vertex] && edge_index.at(std::minmax(vertex, u)) != -1) {
+          graph_status.bridges.insert(std::minmax(vertex, u));
         }
       }
     }
   }
 
-  std::set<Edge> GetBridges(const Graph &graph) {
+  std::set<Graph::Edge> GetBridges(const Graph &graph, const std::map<Graph::Edge, int> &edge_index) {
     const size_t vertex_count = graph.GetVertexCount();
-    VerticesCondition vertices_condition = VerticesCondition(vertex_count);
+    GraphStatus graph_status = GraphStatus(vertex_count);
     for (Graph::Vertex vertex = 1; vertex < vertex_count + 1; ++vertex) {
-      if (!vertices_condition.visited[vertex]) {
-        DFS(graph, vertex, vertices_condition, vertex);
+      if (!graph_status.visited[vertex]) {
+        DFS(graph, vertex, graph_status, edge_index, vertex);
       }
     }
-    return vertices_condition.bridges;
+    return graph_status.bridges;
   }
 }
 
@@ -136,20 +133,25 @@ int main() {
 
   std::cin >> n >> m;
   GraphAdjList graph_adj_list = GraphAdjList(n, false);
-  std::vector<GraphProcessing::Edge> edges;
+  std::vector<Graph::Edge> edges;
+  std::map<Graph::Edge, int> edge_index;
 
   for (int i = 1; i < m + 1; ++i) {
-    Graph::Vertex start, finish;
-    std::cin >> start >> finish;
-    graph_adj_list.AddEdge(start, finish);
-    edges.emplace_back(start, finish);
+    Graph::Vertex from, to;
+    std::cin >> from >> to;
+    graph_adj_list.AddEdge(from, to);
+    if (edge_index[std::minmax(from, to)] == 0) {
+      edge_index[std::minmax(from, to)] = i;
+    } else {
+      edge_index[std::minmax(from, to)] = -1;
+    }
+    edges.emplace_back(std::minmax(from, to));
   }
 
-  auto bridges = GraphProcessing::GetBridges(graph_adj_list);
+  auto bridges = GraphProcessing::GetBridges(graph_adj_list, edge_index);
   std::cout << bridges.size() << std::endl;
   for (int i = 0; i < edges.size(); ++i) {
-    if (bridges.find(edges[i]) != bridges.end() ||
-    bridges.find({edges[i].second, edges[i].first}) != bridges.end()) {
+    if (bridges.find(edges[i]) != bridges.end()) {
       std::cout << i + 1 << ' ';
     }
   }
