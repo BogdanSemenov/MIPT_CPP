@@ -115,7 +115,6 @@ namespace GraphProcessing {
         }
       }
     }
-
     return {};
   }
 }
