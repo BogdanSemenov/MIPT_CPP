@@ -87,25 +87,25 @@ namespace GraphProcessing {
 
   struct StronglyConnectedComponents {
     std::vector<Graph::Vertex> components;
-    size_t scc_count;
-    explicit StronglyConnectedComponents(size_t num_vertices) : components(num_vertices + 1), scc_count(0) {}
+    size_t scc_num;
+    explicit StronglyConnectedComponents(size_t num_vertices) : components(num_vertices + 1), scc_num(0) {}
   };
 
-  void DFS_TopSort(const Graph &graph, std::vector<bool> &visited, std::vector<Graph::Vertex> &order,
+  void DFS_GraphSort(const Graph &graph, std::vector<bool> &visited, std::vector<Graph::Vertex> &sorted_graph,
                    const Graph::Vertex &vertex) {
     visited[vertex] = true;
     for (auto neighbor : graph.GetAllNeighbors(vertex)) {
       if (!visited[neighbor]) {
-        DFS_TopSort(graph, visited, order, neighbor);
+        DFS_GraphSort(graph, visited, sorted_graph, neighbor);
       }
     }
-    order.push_back(vertex);
+    sorted_graph.push_back(vertex);
   }
 
   void DFS_GetSCC(const Graph &graph, StronglyConnectedComponents &strongly_connected_components,
                   std::vector<bool> &visited, const Graph::Vertex &vertex) {
     visited[vertex] = true;
-    strongly_connected_components.components[vertex] = strongly_connected_components.scc_count;
+    strongly_connected_components.components[vertex] = strongly_connected_components.scc_num;
     for (auto neighbor : graph.GetAllNeighbors(vertex)) {
       if (!visited[neighbor]) {
         DFS_GetSCC(graph, strongly_connected_components, visited, neighbor);
@@ -113,24 +113,24 @@ namespace GraphProcessing {
     }
   }
 
-  std::vector<Graph::Vertex> TopSort(const Graph &graph) {
+  std::vector<Graph::Vertex> GraphSort(const Graph &graph) {
     std::vector<bool> visited(graph.GetVertexCount() + 1, false);
-    std::vector<Graph::Vertex> order;
+    std::vector<Graph::Vertex> sorted_graph;
     for (Graph::Vertex vertex = 1; vertex < graph.GetVertexCount() + 1; ++vertex) {
       if (!visited[vertex]) {
-        DFS_TopSort(graph, visited, order, vertex);
+        DFS_GraphSort(graph, visited, sorted_graph, vertex);
       }
     }
-    return {order.rbegin(), order.rend()};
+    return {sorted_graph.rbegin(), sorted_graph.rend()};
   }
 
-  StronglyConnectedComponents GetSCC(const Graph &transposed_graph, const std::vector<Graph::Vertex> &top_sort) {
+  StronglyConnectedComponents GetSCC(const Graph &transposed_graph, const std::vector<Graph::Vertex> &sorted_graph) {
     const size_t vertex_count = transposed_graph.GetVertexCount();
     std::vector<bool> visited(vertex_count + 1, false);
     StronglyConnectedComponents strongly_connected_components(vertex_count);
-    for (Graph::Vertex vertex : top_sort) {
+    for (Graph::Vertex vertex : sorted_graph) {
       if (!visited[vertex]) {
-        ++strongly_connected_components.scc_count;
+        ++strongly_connected_components.scc_num;
         DFS_GetSCC(transposed_graph, strongly_connected_components, visited, vertex);
       }
     }
@@ -138,10 +138,10 @@ namespace GraphProcessing {
   }
 
   StronglyConnectedComponents CondenseGraph(const Graph &graph) {
-    std::vector<Graph::Vertex> top_sort = TopSort(graph);
+    std::vector<Graph::Vertex> sorted_graph = GraphSort(graph);
     auto transposed_graph_ptr = graph.Transpose();
 
-    return GetSCC(*transposed_graph_ptr, top_sort);
+    return GetSCC(*transposed_graph_ptr, sorted_graph);
   }
 }
 
@@ -157,7 +157,7 @@ int main() {
   }
 
   auto condense_graph = GraphProcessing::CondenseGraph(graph_adj_list);
-  std::cout << condense_graph.scc_count << std::endl;
+  std::cout << condense_graph.scc_num << std::endl;
   for (int i = 1; i < condense_graph.components.size(); ++i) {
     std::cout << condense_graph.components[i] << ' ';
   }
