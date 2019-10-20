@@ -62,16 +62,18 @@ class GraphAdjList : public Graph {
 
 namespace GraphProcessing {
 
+  typedef std::vector<Graph::Vertex> Cycle;
+
   enum Colors {
     WHITE,
     GRAY,
     BLACK
   };
 
-  std::vector<Graph::Vertex> GetCycle(std::vector<Graph::Vertex> &predecessors,
+  const Cycle GetCycle(std::vector<Graph::Vertex> &predecessors,
                                       const Graph::Vertex &start,
                                       const Graph::Vertex &finish) {
-    std::vector<Graph::Vertex> cycle;
+    Cycle cycle;
     Graph::Vertex temp_start = start;
     Graph::Vertex temp_finish = finish;
     while (temp_finish != temp_start) {
@@ -82,7 +84,7 @@ namespace GraphProcessing {
     return cycle;
   }
 
-  bool DFS(const Graph &graph, std::vector<Colors> &visited, std::vector<Graph::Vertex> &cycle,
+  bool DFS(const Graph &graph, std::vector<Colors> &visited, Cycle &cycle,
            std::vector<Graph::Vertex> &predecessors,
            const Graph::Vertex &vertex) {
     visited[vertex] = GRAY;
@@ -105,7 +107,7 @@ namespace GraphProcessing {
     const size_t NOT_SET = 0;
     std::vector<Colors> visited(graph.GetVertexCount() + 1, WHITE);
     std::vector<Graph::Vertex> predecessors(graph.GetVertexCount() + 1, NOT_SET);
-    std::vector<Graph::Vertex> cycle;
+    Cycle cycle;
     for (Graph::Vertex vertex = 1; vertex < graph.GetVertexCount() + 1; ++vertex) {
       if (visited[vertex] == WHITE) {
         if (DFS(graph, visited, cycle, predecessors, vertex)) {
@@ -129,13 +131,13 @@ int main() {
     graph_adj_list.AddEdge(start, finish);
   }
 
-  auto predecessors = GraphProcessing::FindCycle(graph_adj_list);
+  auto cycle = GraphProcessing::FindCycle(graph_adj_list);
 
-  if (predecessors.empty()) {
+  if (cycle.empty()) {
     std::cout << "NO";
   } else {
     std::cout << "YES" << std::endl;
-    for (auto vertex : predecessors) {
+    for (auto vertex : cycle) {
       std::cout << vertex << ' ';
     }
   }
