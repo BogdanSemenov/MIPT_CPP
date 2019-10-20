@@ -69,20 +69,20 @@ class GraphAdjList : public Graph {
 
 namespace GraphProcessing {
 
-  enum Groups {
+  enum Group {
     FIRST,
     SECOND,
     NOT_SET
   };
 
-  bool DFS(const Graph &graph, std::vector<Groups> &visited, const Graph::Vertex &vertex) {
-    Groups neighbor_group = (visited[vertex] == FIRST ? SECOND : FIRST);
+  bool DFS(const Graph &graph, std::vector<Group> &group_status, const Graph::Vertex &vertex) {
+    Group neighbor_group = (group_status[vertex] == FIRST ? SECOND : FIRST);
     for (auto neighbor : graph.GetAllNeighbors(vertex)) {
-      if (visited[neighbor] == visited[vertex]) {
+      if (group_status[neighbor] == group_status[vertex]) {
         return false;
-      } else if (visited[neighbor] == NOT_SET) {
-        visited[neighbor] = neighbor_group;
-        if (!DFS(graph, visited, neighbor)) {
+      } else if (group_status[neighbor] == NOT_SET) {
+        group_status[neighbor] = neighbor_group;
+        if (!DFS(graph, group_status, neighbor)) {
           return false;
         }
       }
@@ -91,16 +91,15 @@ namespace GraphProcessing {
   }
 
   bool IsBipartiteGraph(const Graph &graph) {
-    std::vector<Groups> visited(graph.GetVertexCount() + 1, NOT_SET);
+    std::vector<Group> group_status(graph.GetVertexCount() + 1, NOT_SET);
     for (Graph::Vertex vertex = 1; vertex < graph.GetVertexCount() + 1; ++vertex) {
-      if (visited[vertex] == NOT_SET) {
-        visited[vertex] = FIRST;
-        if (!DFS(graph, visited, vertex)) {
+      if (group_status[vertex] == NOT_SET) {
+        group_status[vertex] = FIRST;
+        if (!DFS(graph, group_status, vertex)) {
           return false;
         }
       }
     }
-
     return true;
   }
 
