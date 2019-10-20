@@ -53,7 +53,7 @@ class Graph {
     return vertex_count_;
   }
 
-  virtual void AddEdge(const Vertex &start, const Vertex &finish, int weight) = 0;
+  virtual void AddEdge(const Vertex &start, const Vertex &finish, int weight = 1) = 0;
 
   virtual std::vector<Edge> GetEdges() const = 0;
 };
@@ -68,7 +68,7 @@ class GraphAdjList : public Graph {
       : Graph(vertex_count, is_directed),
         adj_list_(vertex_count + 1) {}
 
-  void AddEdge(const Vertex &start, const Vertex &finish, int weight) override {
+  void AddEdge(const Vertex &start, const Vertex &finish, int weight = 1) override {
     adj_list_[start].push_back(finish);
     edges_.emplace_back(start, finish, weight);
     if (!is_directed_) {
@@ -85,20 +85,21 @@ class GraphAdjList : public Graph {
 
 namespace GraphProcessing {
 
-  std::vector<size_t> FordBellmanForOneVertex(const Graph &graph, const Graph::Vertex &vertex) {
-    const size_t MAX = 30000;
-    std::vector<size_t> distances(graph.GetVertexCount() + 1, MAX);
-    distances[vertex] = 0;
+  const int INF = std::numeric_limits<int>::max() / 2;
 
-    for (int i = 1; i < graph.GetVertexCount(); ++i) {
+  std::vector<size_t> FordBellmanForOneVertex(const Graph &graph, const Graph::Vertex &vertex) {
+    std::vector<size_t> distances(graph.GetVertexCount() + 1, INF);
+    distances[vertex] = 0;
+    for (size_t i = 0; i < graph.GetVertexCount() - 1; ++i) {
       auto edges = graph.GetEdges();
       for (auto edge : edges) {
-        if (distances[edge.from] != MAX && distances[edge.to] > distances[edge.from] + edge.weight) {
-          distances[edge.to] = distances[edge.from] + edge.weight;
+        if (distances[edge.from] < INF) {
+          if (distances[edge.to] > distances[edge.from] + edge.weight) {
+            distances[edge.to] = distances[edge.from] + edge.weight;
+          }
         }
       }
     }
-
     return distances;
   }
 }
@@ -119,7 +120,11 @@ int main() {
   auto distances = GraphProcessing::FordBellmanForOneVertex(graph_adj_list, 1);
 
   for (int i = 1; i < distances.size(); ++i) {
-    std::cout << distances[i] << ' ';
+    if (distances[i] == GraphProcessing::INF) {
+      std::cout << 30000 << ' ';
+    } else {
+      std::cout << distances[i] << ' ';
+    }
   }
 
   return 0;
