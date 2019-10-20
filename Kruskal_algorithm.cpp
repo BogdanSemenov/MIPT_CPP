@@ -133,7 +133,6 @@ namespace GraphProcessing {
     }
   };
 
-<<<<<<< HEAD
   std::vector<Graph::Edge> Kruskal_Get_MST(const Graph &graph) {
     auto edges = graph.GetEdges();
     std::sort(edges.begin(), edges.end());
@@ -144,17 +143,6 @@ namespace GraphProcessing {
         dsu.Union(edge.to, edge.from);
         min_span_tree.push_back(edge);
       }
-=======
-std::vector<Graph::Edge> Kruskal_Get_MST(const Graph &graph) {
-  auto edges = graph.GetEdges();
-  std::sort(edges.begin(), edges.end());
-  std::vector<Graph::Edge> min_span_tree;
-  DSU<Graph::Vertex> dsu(1, graph.GetVertexCount());
-  for (auto edge : edges) {
-    if (!dsu.InSameSet(edge.from, edge.to)) {
-      dsu.Union(edge.to, edge.from);
-      min_span_tree.push_back(edge);
->>>>>>> e4c3e8228c4d61b2b6e28f8ae1ad511fa03c9756
     }
     return min_span_tree;
   }
