@@ -127,7 +127,7 @@ std::vector<Graph::Edge> Kruskal_Get_MST(const Graph &graph) {
   auto edges = graph.GetEdges();
   std::sort(edges.begin(), edges.end());
   std::vector<Graph::Edge> min_span_tree;
-  DSU<int> dsu(1, graph.GetVertexCount());
+  DSU<Graph::Vertex> dsu(1, graph.GetVertexCount());
   for (auto edge : edges) {
     if (!dsu.InSameSet(edge.from, edge.to)) {
       dsu.Union(edge.to, edge.from);
