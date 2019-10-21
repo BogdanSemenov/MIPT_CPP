@@ -49,7 +49,7 @@ class Graph {
     return vertex_count_;
   }
 
-  virtual void AddEdge(const Vertex &start, const Vertex &finish, int weight) = 0;
+  virtual void AddEdge(const Vertex &start, const Vertex &finish, int weight = 1) = 0;
 
   virtual std::vector<Edge> GetEdges() const = 0;
 
@@ -66,7 +66,7 @@ class GraphAdjList : public Graph {
       : Graph(vertex_count, is_directed),
         adj_list_(vertex_count + 1) {}
 
-  void AddEdge(const Vertex &start, const Vertex &finish, int weight) override {
+  void AddEdge(const Vertex &start, const Vertex &finish, int weight = 1) override {
     adj_list_[start].push_back(finish);
     edges_.emplace_back(start, finish, weight);
     if (!is_directed_) {
