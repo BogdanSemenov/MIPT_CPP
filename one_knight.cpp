@@ -26,7 +26,22 @@ class Graph {
   bool is_directed_;
 
  public:
-  typedef std::pair<size_t, size_t> Vertex;
+  struct Vertex {
+    std::pair<size_t, size_t> vertex;
+
+    Vertex() = default;
+    Vertex(size_t first, size_t second) : vertex{first, second} {}
+    explicit Vertex(size_t default_value) : vertex{default_value, default_value} {}
+
+    bool operator!=(const Vertex &other) {
+      return vertex != other.vertex;
+    }
+
+    friend bool operator<(const Vertex &lhs, const Vertex &rhs) {
+      return lhs.vertex.first < rhs.vertex.first ||
+          (lhs.vertex.first == rhs.vertex.first && lhs.vertex.second < rhs.vertex.second);
+    }
+  };
 
   explicit Graph(size_t vertex_count, bool is_directed)
       : vertex_count_(vertex_count),
@@ -64,8 +79,8 @@ class GraphAdjList : public Graph {
 
 template<typename T>
 void InitializeMap(size_t vertex_count, std::map<Graph::Vertex, T> &map, const T &value) {
-  for (int i = 1; i < vertex_count + 1; ++i) {
-    for (int j = 1; j < vertex_count + 1; ++j) {
+  for (size_t i = 1; i < vertex_count + 1; ++i) {
+    for (size_t j = 1; j < vertex_count + 1; ++j) {
       map[{i, j}] = value;
     }
   }
@@ -96,7 +111,7 @@ namespace GraphProcessing {
 
   std::vector<Graph::Vertex> GetMinPath(const Graph &graph, const Graph::Vertex &start,
                                         const Graph::Vertex &finish) {
-    const Graph::Vertex NOT_SET = {0, 0};
+    const Graph::Vertex NOT_SET(0);
     std::map<Graph::Vertex, Graph::Vertex> predecessors;
     InitializeMap(graph.GetVertexCount(), predecessors, NOT_SET);
     BFS(graph, predecessors, start);
@@ -106,40 +121,27 @@ namespace GraphProcessing {
       min_path.push_back(vertex);
       vertex = predecessors[vertex];
     }
-
     return {min_path.rbegin(), min_path.rend()};
   }
+}
 
+bool IsValid(const Graph::Vertex &vertex, size_t vertex_num) {
+  return std::min(vertex.vertex.first, vertex.vertex.second) >= 1
+      && std::max(vertex.vertex.first, vertex.vertex.second) <= vertex_num;
 }
 
 GraphAdjList MakeAdjList(size_t vertex_num) {
   GraphAdjList graph_adj_list(vertex_num, true);
-  for (int start = 1; start < vertex_num + 1; ++start) {
-    for (int finish = 1; finish < vertex_num + 1; ++finish) {
-      Graph::Vertex v = {start, finish};
-      if (start + 1 <= vertex_num && finish + 2 <= vertex_num) {
-        graph_adj_list.AddEdge(v, {start + 1, finish + 2});
-      }
-      if (start + 1 <= vertex_num && finish - 2 >= 1) {
-        graph_adj_list.AddEdge(v, {start + 1, finish - 2});
-      }
-      if (start + 2 <= vertex_num && finish + 1 <= vertex_num) {
-        graph_adj_list.AddEdge(v, {start + 2, finish + 1});
-      }
-      if (start + 2 <= vertex_num && finish - 1 >= 1) {
-        graph_adj_list.AddEdge(v, {start + 2, finish - 1});
-      }
-      if (start - 2 >= 1 && finish + 1 <= vertex_num) {
-        graph_adj_list.AddEdge(v, {start - 2, finish + 1});
-      }
-      if (start - 2 >= 1 && finish - 1 >= 1) {
-        graph_adj_list.AddEdge(v, {start - 2, finish - 1});
-      }
-      if (start - 1 >= 1 && finish + 2 <= vertex_num) {
-        graph_adj_list.AddEdge(v, {start - 1, finish + 2});
-      }
-      if (start - 1 >= 1 && finish - 2 >= 1) {
-        graph_adj_list.AddEdge(v, {start - 1, finish - 2});
+  std::vector<int> delta_x = {2, 2, -2, -2, 1, 1, -1, -1};
+  std::vector<int> delta_y = {1, -1, 1, -1, 2, -2, 2, -2};
+  for (size_t i = 1; i <= vertex_num; ++i) {
+    for (size_t j = 1; j <= vertex_num; ++j) {
+      Graph::Vertex vertex{i, j};
+      for (size_t k = 0; k < delta_x.size(); ++k) {
+        Graph::Vertex neighbor{i + delta_x[k], j + delta_y[k]};
+        if (IsValid(neighbor, vertex_num)) {
+          graph_adj_list.AddEdge(vertex, neighbor);
+        }
       }
     }
   }
@@ -163,7 +165,7 @@ int main() {
   } else {
     std::cout << min_path.size() - 1 << std::endl;
     for (auto vertex : min_path) {
-      std::cout << vertex.first << ' ' << vertex.second << std::endl;
+      std::cout << vertex.vertex.first << ' ' << vertex.vertex.second << std::endl;
     }
   }
 
