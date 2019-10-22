@@ -94,7 +94,7 @@ namespace GraphProcessing {
     }
   }
   
-  std::vector<Graph::Vertex> TopSort(const Graph &graph) {
+  std::vector<Graph::Vertex> GraphSort(const Graph &graph) {
     if (!graph.IsDirected()) {
       return {};
     }
@@ -112,7 +112,7 @@ namespace GraphProcessing {
   size_t CountComponentsOfSortedGraph(const Graph &graph) {
     std::vector<bool> visited(graph.GetVertexCount() + 1, false);
     size_t dfs_visiting_counter = 0;
-    for (Graph::Vertex vertex : TopSort(graph)) {
+    for (Graph::Vertex vertex : GraphSort(graph)) {
       if (!visited[vertex]) {
         DFS(graph, visited, vertex);
         ++dfs_visiting_counter;
