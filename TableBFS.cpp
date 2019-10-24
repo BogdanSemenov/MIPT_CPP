@@ -28,19 +28,19 @@ class Graph {
 
  public:
   struct Vertex {
-    std::pair<size_t, size_t> vertex;
+    size_t column;
+    size_t row;
 
     Vertex() = default;
-    Vertex(size_t first, size_t second) : vertex{first, second} {}
-    explicit Vertex(size_t default_value) : vertex{default_value, default_value} {}
+    Vertex(size_t column, size_t row) : column(column), row(row) {}
 
     bool operator!=(const Vertex &other) {
-      return vertex != other.vertex;
+      return column != other.column || row != other.row;
     }
 
     friend bool operator<(const Vertex &lhs, const Vertex &rhs) {
-      return lhs.vertex.first < rhs.vertex.first ||
-          (lhs.vertex.first == rhs.vertex.first && lhs.vertex.second < rhs.vertex.second);
+      return lhs.column < rhs.column ||
+          (lhs.column == rhs.column && lhs.row < rhs.row);
     }
   };
 
@@ -126,8 +126,8 @@ namespace GraphProcessing {
 }
 
 bool IsValid(const Graph::Vertex &vertex, size_t height, size_t width) {
-  return std::min(vertex.vertex.first, vertex.vertex.second) >= 1
-      && vertex.vertex.first <= height && vertex.vertex.second <= width;
+  return std::min(vertex.column, vertex.row) >= 1
+      && vertex.column <= height && vertex.row <= width;
 }
 
 GraphAdjList MakeAdjList(size_t height, size_t width) {
