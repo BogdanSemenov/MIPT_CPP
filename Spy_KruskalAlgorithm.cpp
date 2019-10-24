@@ -25,7 +25,7 @@ Output format
 
 Выведите одно число - минимальную стоимость спасения мира.
 
- Input	     Output
+ Input         Output
 3              17
 0 6 9
 6 0 4
@@ -67,6 +67,11 @@ class Graph {
     Vertex to;
     int weight;
 
+    Edge(const Vertex &from, const Vertex &to, int weight)
+    : from(std::min(from, to)),
+      to(std::max(to, from)),
+      weight(weight) {}
+
     bool operator<(const Edge &other) const {
       return weight < other.weight;
     }
@@ -99,7 +104,6 @@ class GraphAdjList : public Graph {
     edges_.emplace_back(start, finish, weight);
     if (!is_directed_) {
       adj_list_[finish].push_back(start);
-      edges_.emplace_back(finish, start, weight);
     }
     ++edge_count_;
   }
