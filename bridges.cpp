@@ -32,7 +32,18 @@ class Graph {
 
  public:
   typedef size_t Vertex;
-  typedef std::pair<Graph::Vertex, Graph::Vertex> Edge;
+  struct Edge {
+    Graph::Vertex from;
+    Graph::Vertex to;
+
+    Edge(Graph::Vertex from, Graph::Vertex to)
+    : from(std::min(from, to)),
+      to(std::max(from, to)) {}
+
+    bool operator<(const Edge &other) const {
+      return (from < other.from) || (from == other.from && to < other.to);
+    }
+  };
 
   explicit Graph(size_t vertex_count, bool is_directed)
       : vertex_count_(vertex_count),
@@ -87,15 +98,15 @@ namespace GraphProcessing {
     size_t time;
     std::set<Graph::Edge> bridges;
 
-    explicit GraphStatus(size_t vertex_count) :
-        visited(vertex_count + 1, false),
-        time_in(vertex_count + 1, 0),
-        time_up(vertex_count + 1, 0),
-        time(0) {}
+    explicit GraphStatus(size_t vertex_count)
+    : visited(vertex_count + 1, false),
+      time_in(vertex_count + 1, 0),
+      time_up(vertex_count + 1, 0),
+      time(0) {}
   };
 
   void DFS(const Graph &graph, const Graph::Vertex &vertex, GraphStatus &graph_status,
-           const std::map<Graph::Edge, int> &edge_index, const Graph::Vertex &predecessor) {
+           const Graph::Vertex &predecessor) {
     graph_status.time_in[vertex] = graph_status.time_up[vertex] = ++graph_status.time;
     graph_status.visited[vertex] = true;
     for (Graph::Vertex u : graph.GetAllNeighbors(vertex)) {
@@ -106,22 +117,22 @@ namespace GraphProcessing {
         graph_status.time_up[vertex] = std::min(graph_status.time_up[vertex],
                                                 graph_status.time_in[u]);
       } else {
-        DFS(graph, u, graph_status, edge_index, vertex);
+        DFS(graph, u, graph_status, vertex);
         graph_status.time_up[vertex] = std::min(graph_status.time_up[vertex],
                                                 graph_status.time_up[u]);
-        if (graph_status.time_up[u] > graph_status.time_in[vertex] && edge_index.at(std::minmax(vertex, u)) != -1) {
-          graph_status.bridges.insert(std::minmax(vertex, u));
+        if (graph_status.time_up[u] > graph_status.time_in[vertex]) {
+          graph_status.bridges.insert(Graph::Edge(vertex, u));
         }
       }
     }
   }
 
-  std::set<Graph::Edge> GetBridges(const Graph &graph, const std::map<Graph::Edge, int> &edge_index) {
+  std::set<Graph::Edge> GetBridges(const Graph &graph) {
     const size_t vertex_count = graph.GetVertexCount();
     GraphStatus graph_status = GraphStatus(vertex_count);
     for (Graph::Vertex vertex = 1; vertex < vertex_count + 1; ++vertex) {
       if (!graph_status.visited[vertex]) {
-        DFS(graph, vertex, graph_status, edge_index, vertex);
+        DFS(graph, vertex, graph_status, vertex);
       }
     }
     return graph_status.bridges;
@@ -130,30 +141,32 @@ namespace GraphProcessing {
 
 int main() {
   size_t n, m;
-
   std::cin >> n >> m;
+  const int MULTI_EDGE = -1;
   GraphAdjList graph_adj_list = GraphAdjList(n, false);
-  std::vector<Graph::Edge> edges;
   std::map<Graph::Edge, int> edge_index;
 
   for (int i = 1; i < m + 1; ++i) {
     Graph::Vertex from, to;
     std::cin >> from >> to;
     graph_adj_list.AddEdge(from, to);
-    if (edge_index[std::minmax(from, to)] == 0) {
-      edge_index[std::minmax(from, to)] = i;
+    if (edge_index.find(Graph::Edge(from, to)) == edge_index.end()) {
+      edge_index[Graph::Edge(from, to)] = i;
     } else {
-      edge_index[std::minmax(from, to)] = -1;
+      edge_index[Graph::Edge(from, to)] = MULTI_EDGE;
     }
-    edges.emplace_back(std::minmax(from, to));
   }
 
-  auto bridges = GraphProcessing::GetBridges(graph_adj_list, edge_index);
-  std::cout << bridges.size() << std::endl;
-  for (int i = 0; i < edges.size(); ++i) {
-    if (bridges.find(edges[i]) != bridges.end()) {
-      std::cout << i + 1 << ' ';
+  auto bridges = GraphProcessing::GetBridges(graph_adj_list);
+  std::set<int> edge_id;
+  for (auto bridge : bridges) {
+    if (edge_index[bridge] != MULTI_EDGE) {
+        edge_id.insert(edge_index[bridge]);
     }
+  }
+  std::cout << edge_id.size() << std::endl;
+  for (auto id : edge_id) {
+    std::cout << id << ' ';
   }
 
   return 0;
