@@ -71,7 +71,6 @@ class GraphAdjList : public Graph {
     edges_.emplace_back(start, finish, weight);
     if (!is_directed_) {
       adj_list_[finish].push_back(start);
-      edges_.emplace_back(finish, start, weight);
     }
     ++edge_count_;
   }
