@@ -27,19 +27,20 @@ class Graph {
 
  public:
   struct Vertex {
-    std::pair<size_t, size_t> vertex;
+    size_t column;
+    size_t row;
 
     Vertex() = default;
-    Vertex(size_t first, size_t second) : vertex{first, second} {}
-    explicit Vertex(size_t default_value) : vertex{default_value, default_value} {}
+    Vertex(size_t column, size_t row) : column(column), row(row) {}
+    explicit Vertex(size_t default_value) : column(default_value), row(default_value) {}
 
     bool operator!=(const Vertex &other) {
-      return vertex != other.vertex;
+      return column != other.column || row != other.row;
     }
 
     friend bool operator<(const Vertex &lhs, const Vertex &rhs) {
-      return lhs.vertex.first < rhs.vertex.first ||
-          (lhs.vertex.first == rhs.vertex.first && lhs.vertex.second < rhs.vertex.second);
+      return lhs.column < rhs.column ||
+          (lhs.column == rhs.column && lhs.row < rhs.row);
     }
   };
 
@@ -100,7 +101,7 @@ namespace GraphProcessing {
       Graph::Vertex vertex = queue.front();
       queue.pop();
       for (Graph::Vertex neighbor : graph.GetAllNeighbors(vertex)) {
-        if (dist[neighbor] == -1) {
+        if (dist[neighbor] == NOT_SET) {
           dist[neighbor] = dist[vertex] + 1;
           queue.push(neighbor);
           predecessors[neighbor] = vertex;
@@ -126,8 +127,8 @@ namespace GraphProcessing {
 }
 
 bool IsValid(const Graph::Vertex &vertex, size_t vertex_num) {
-  return std::min(vertex.vertex.first, vertex.vertex.second) >= 1
-      && std::max(vertex.vertex.first, vertex.vertex.second) <= vertex_num;
+  return std::min(vertex.column, vertex.row) >= 1
+      && std::max(vertex.column, vertex.row) <= vertex_num;
 }
 
 GraphAdjList MakeAdjList(size_t vertex_num) {
@@ -165,7 +166,7 @@ int main() {
   } else {
     std::cout << min_path.size() - 1 << std::endl;
     for (auto vertex : min_path) {
-      std::cout << vertex.vertex.first << ' ' << vertex.vertex.second << std::endl;
+      std::cout << vertex.column << ' ' << vertex.row << std::endl;
     }
   }
 
