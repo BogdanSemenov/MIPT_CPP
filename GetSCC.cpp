@@ -87,8 +87,11 @@ namespace GraphProcessing {
 
   struct StronglyConnectedComponents {
     std::vector<Graph::Vertex> components;
-    size_t scc_num;
-    explicit StronglyConnectedComponents(size_t num_vertices) : components(num_vertices + 1), scc_num(0) {}
+    size_t current_component;
+
+    explicit StronglyConnectedComponents(size_t num_vertices)
+    : components(num_vertices + 1),
+      current_component(0) {}
   };
 
   void DFS_GraphSort(const Graph &graph, std::vector<bool> &visited, std::vector<Graph::Vertex> &sorted_graph,
@@ -105,7 +108,7 @@ namespace GraphProcessing {
   void DFS_GetSCC(const Graph &graph, StronglyConnectedComponents &strongly_connected_components,
                   std::vector<bool> &visited, const Graph::Vertex &vertex) {
     visited[vertex] = true;
-    strongly_connected_components.components[vertex] = strongly_connected_components.scc_num;
+    strongly_connected_components.components[vertex] = strongly_connected_components.current_component;
     for (auto neighbor : graph.GetAllNeighbors(vertex)) {
       if (!visited[neighbor]) {
         DFS_GetSCC(graph, strongly_connected_components, visited, neighbor);
@@ -130,7 +133,7 @@ namespace GraphProcessing {
     StronglyConnectedComponents strongly_connected_components(vertex_count);
     for (Graph::Vertex vertex : sorted_graph) {
       if (!visited[vertex]) {
-        ++strongly_connected_components.scc_num;
+        ++strongly_connected_components.current_component;
         DFS_GetSCC(transposed_graph, strongly_connected_components, visited, vertex);
       }
     }
@@ -140,7 +143,6 @@ namespace GraphProcessing {
   StronglyConnectedComponents CondenseGraph(const Graph &graph) {
     std::vector<Graph::Vertex> sorted_graph = GraphSort(graph);
     auto transposed_graph_ptr = graph.Transpose();
-
     return GetSCC(*transposed_graph_ptr, sorted_graph);
   }
 }
@@ -157,7 +159,7 @@ int main() {
   }
 
   auto condense_graph = GraphProcessing::CondenseGraph(graph_adj_list);
-  std::cout << condense_graph.scc_num << std::endl;
+  std::cout << condense_graph.current_component << std::endl;
   for (int i = 1; i < condense_graph.components.size(); ++i) {
     std::cout << condense_graph.components[i] << ' ';
   }
