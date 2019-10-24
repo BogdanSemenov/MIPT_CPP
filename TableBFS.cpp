@@ -90,11 +90,10 @@ void InitializeMap(size_t height, size_t vertex_num, std::map<Graph::Vertex, T> 
 
 namespace GraphProcessing {
 
+  const int NOT_SET = -1;
+
   std::map<Graph::Vertex, int> BFS(const Graph &graph, const std::vector<Graph::Vertex> &start_vertices,
-                                   size_t height) {
-    const int NOT_SET = -1;
-    std::map<Graph::Vertex, int> min_distances;
-    InitializeMap(height, graph.GetVertexCount(), min_distances, NOT_SET);
+                                   std::map<Graph::Vertex, int> &min_distances) {
     std::queue<Graph::Vertex> queue;
     for (const Graph::Vertex vertex : start_vertices) {
       min_distances[vertex] = 0;
@@ -115,9 +114,11 @@ namespace GraphProcessing {
 
   std::vector<int> GetMinDistances(const Graph &graph, const std::vector<Graph::Vertex> &start_vertices,
                                    size_t height) {
-    auto vertices_min_distances = BFS(graph, start_vertices, height);
+    std::map<Graph::Vertex, int> min_distances;
+    InitializeMap(height, graph.GetVertexCount(), min_distances, NOT_SET);
+    BFS(graph, start_vertices, min_distances);
     std::vector<int> distances;
-    for (auto distance : vertices_min_distances) {
+    for (auto distance : min_distances) {
       distances.push_back(distance.second);
     }
     return distances;
