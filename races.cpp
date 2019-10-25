@@ -12,19 +12,19 @@ class Graph {
 
  public:
   struct Vertex {
-    std::pair<int, int> vertex;
+    int column;
+    int row;
 
-    Vertex() = default;
-    Vertex(int first, int second) : vertex{first, second} {}
-    explicit Vertex(int default_value) : vertex{default_value, default_value} {}
+    Vertex() : column(0), row(0) {}
+    Vertex(int column, int row) : column(column), row(row) {}
 
     bool operator!=(const Vertex &other) {
-      return vertex != other.vertex;
+      return column != other.column || row != other.row;
     }
 
     friend bool operator<(const Vertex &lhs, const Vertex &rhs) {
-      return lhs.vertex.first < rhs.vertex.first ||
-          (lhs.vertex.first == rhs.vertex.first && lhs.vertex.second < rhs.vertex.second);
+      return lhs.column < rhs.column ||
+          (lhs.column == rhs.column && lhs.row < rhs.row);
     }
   };
 
@@ -125,22 +125,22 @@ void MoveDown(int x_coord, int y_coord, int &delta_down, const std::vector<std::
 
 void MakeMove(int x_coord, int y_coord, Graph::Vertex &left, Graph::Vertex &right,
               Graph::Vertex &up, Graph::Vertex &down, const std::vector<std::vector<int>> &matrix) {
-  MoveLeft(x_coord, y_coord, left.vertex.second, matrix);
-  MoveRight(x_coord, y_coord, right.vertex.second, matrix);
-  MoveUp(x_coord, y_coord, up.vertex.first, matrix);
-  MoveDown(x_coord, y_coord, down.vertex.first, matrix);
+  MoveLeft(x_coord, y_coord, left.row, matrix);
+  MoveRight(x_coord, y_coord, right.row, matrix);
+  MoveUp(x_coord, y_coord, up.column, matrix);
+  MoveDown(x_coord, y_coord, down.column, matrix);
 }
 
 std::vector<Graph::Vertex> MakeNeighbours(int x_coord, int y_coord, Graph::Vertex &left, Graph::Vertex &right,
                                           Graph::Vertex &up, Graph::Vertex &down) {
   std::vector<Graph::Vertex> neighbors;
-  left.vertex.second = x_coord + left.vertex.second / 2;
+  left.row = x_coord + left.row / 2;
   neighbors.push_back(left);
-  right.vertex.second = x_coord + right.vertex.second / 2;
+  right.row = x_coord + right.row / 2;
   neighbors.push_back(right);
-  up.vertex.first = y_coord + up.vertex.first / 2;
+  up.column = y_coord + up.column / 2;
   neighbors.push_back(up);
-  down.vertex.first = y_coord + down.vertex.first / 2;
+  down.column = y_coord + down.column / 2;
   neighbors.push_back(down);
   return neighbors;
 }
@@ -154,8 +154,8 @@ GraphAdjList MakeAdjList(const std::vector<std::vector<int>> &matrix) {
       Graph::Vertex vertex = {i, j};
       if (matrix[i][j] == 1) {
         Graph::Vertex left, right, up, down;
-        left.vertex.first = right.vertex.first = i;
-        up.vertex.second = down.vertex.second = j;
+        left.column = right.column = i;
+        up.row = down.row = j;
         MakeMove(j, i, left, right, up, down, matrix);
         std::vector<Graph::Vertex> neighbors = MakeNeighbours(j, i, left, right, up, down);
         for (auto neighbor : neighbors) {
