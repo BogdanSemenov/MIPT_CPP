@@ -28,19 +28,19 @@ class Graph {
 
  public:
   struct Vertex {
-    size_t column;
     size_t row;
+    size_t column;
 
-    Vertex() = default;
-    Vertex(size_t column, size_t row) : column(column), row(row) {}
+    Vertex() : column(0), row(0) {}
+    Vertex(size_t row, size_t column) : row(row), column(column) {}
 
     bool operator!=(const Vertex &other) {
       return column != other.column || row != other.row;
     }
 
     friend bool operator<(const Vertex &lhs, const Vertex &rhs) {
-      return lhs.column < rhs.column ||
-          (lhs.column == rhs.column && lhs.row < rhs.row);
+      return lhs.row < rhs.row ||
+          (lhs.row == rhs.row && lhs.column < rhs.column);
     }
   };
 
@@ -81,8 +81,8 @@ class GraphAdjList : public Graph {
 
 template<typename T>
 void InitializeMap(size_t height, size_t vertex_num, std::map<Graph::Vertex, T> &map, const T &value) {
-  for (size_t i = 1; i < height + 1; ++i) {
-    for (size_t j = 1; j < vertex_num / height + 1; ++j) {
+  for (size_t i = 1; i <= height; ++i) {
+    for (size_t j = 1; j <= vertex_num / height; ++j) {
       map[{i, j}] = value;
     }
   }
@@ -127,7 +127,7 @@ namespace GraphProcessing {
 
 bool IsValid(const Graph::Vertex &vertex, size_t height, size_t width) {
   return std::min(vertex.column, vertex.row) >= 1
-      && vertex.column <= height && vertex.row <= width;
+      && vertex.column <= width && vertex.row <= height;
 }
 
 GraphAdjList MakeAdjList(size_t height, size_t width) {
@@ -138,7 +138,7 @@ GraphAdjList MakeAdjList(size_t height, size_t width) {
     for (size_t j = 1; j <= width; ++j) {
       Graph::Vertex vertex{i, j};
       for (size_t k = 0; k < delta_x.size(); ++k) {
-        Graph::Vertex neighbor{i + delta_x[k], j + delta_y[k]};
+        Graph::Vertex neighbor{i + delta_y[k], j + delta_x[k]};
         if (IsValid(neighbor, height, width)) {
           graph_adj_list.AddEdge(vertex, neighbor);
         }
