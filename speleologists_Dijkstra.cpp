@@ -36,7 +36,7 @@ Output format
 Выведите единственное число - минимальное количество секунд, которое требуется спелеологам для того,
  чтобы выбраться из пещеры, либо "-1", если спелеологам не удастся выбраться.
 
-Input	Output
+Input    Output
 6 5 1    23
 6
 1 2 20
@@ -140,8 +140,24 @@ class GraphAdjList : public Graph {
 
 namespace GraphProcessing {
 
-  typedef std::priority_queue<std::pair<size_t, Graph::Vertex>, std::vector<std::pair<size_t, Graph::Vertex>>,
-                              std::greater<>> PriorityQueue;
+  struct Distance_Vertex {
+    size_t distance;
+    Graph::Vertex vertex;
+
+    Distance_Vertex(size_t distance, Graph::Vertex vertex)
+        : distance(distance),
+          vertex(vertex) {}
+
+    bool operator<(const Distance_Vertex &other) const {
+      return distance < other.distance;
+    }
+
+    bool operator>(const Distance_Vertex &other) const {
+      return distance > other.distance;
+    }
+  };
+
+  typedef std::priority_queue<Distance_Vertex, std::vector<Distance_Vertex>, std::greater<>> PriorityQueue;
 
   void Relax(const Graph &graph, std::vector<size_t> &min_distance, const Graph::Vertex &neighbor,
              const Graph::Vertex &vertex, PriorityQueue &priority_queue) {
@@ -163,7 +179,7 @@ namespace GraphProcessing {
       priority_queue.push({0, start});
     }
     while (!priority_queue.empty()) {
-      Graph::Vertex vertex = priority_queue.top().second;
+      Graph::Vertex vertex = priority_queue.top().vertex;
       priority_queue.pop();
       if (visited[vertex]) {
         continue;
