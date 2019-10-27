@@ -80,9 +80,9 @@ class GraphAdjList : public Graph {
 };
 
 template<typename T>
-void InitializeMap(size_t height, size_t vertex_num, std::map<Graph::Vertex, T> &map, const T &value) {
+void InitializeMap(size_t height, size_t width, std::map<Graph::Vertex, T> &map, const T &value) {
   for (size_t i = 1; i <= height; ++i) {
-    for (size_t j = 1; j <= vertex_num / height; ++j) {
+    for (size_t j = 1; j <= width; ++j) {
       map[{i, j}] = value;
     }
   }
@@ -112,10 +112,8 @@ namespace GraphProcessing {
     return min_distances;
   }
 
-  std::vector<int> GetMinDistances(const Graph &graph, const std::vector<Graph::Vertex> &start_vertices,
-                                   size_t height) {
-    std::map<Graph::Vertex, int> min_distances;
-    InitializeMap(height, graph.GetVertexCount(), min_distances, NOT_SET);
+  std::vector<int> GetMinDistances(const Graph &graph, std::map<Graph::Vertex, int> &min_distances,
+                                   const std::vector<Graph::Vertex> &start_vertices) {
     BFS(graph, start_vertices, min_distances);
     std::vector<int> distances;
     for (auto distance : min_distances) {
@@ -125,7 +123,15 @@ namespace GraphProcessing {
   }
 }
 
-bool IsValid(const Graph::Vertex &vertex, size_t height, size_t width) {
+std::vector<int> GetMinDistancesForTable(const Graph &graph, const std::vector<Graph::Vertex> &start_vertices,
+                                         const size_t height, const size_t width) {
+  std::map<Graph::Vertex, int> min_distances;
+  InitializeMap(height, width, min_distances, GraphProcessing::NOT_SET);
+  return GraphProcessing::GetMinDistances(graph, min_distances, start_vertices);
+
+}
+
+bool IsValid(const Graph::Vertex &vertex, const size_t height, const size_t width) {
   return std::min(vertex.column, vertex.row) >= 1
       && vertex.column <= width && vertex.row <= height;
 }
@@ -163,7 +169,7 @@ int main() {
     }
   }
 
-  std::vector<int> min_distances = GraphProcessing::GetMinDistances(graph_adj_list, start_vertices, n);
+  std::vector<int> min_distances = GetMinDistancesForTable(graph_adj_list, start_vertices, n, m);
   for (size_t i = 0; i < n * m; ++i) {
     std::cout << min_distances[i] << ' ';
     if ((i + 1) % m == 0) {
