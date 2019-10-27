@@ -86,64 +86,61 @@ class GraphAdjList : public Graph {
 namespace GraphProcessing {
 
   struct StronglyConnectedComponents {
-    std::vector<Graph::Vertex> components;
-    size_t current_component;
-
-    explicit StronglyConnectedComponents(size_t num_vertices)
-    : components(num_vertices + 1),
-      current_component(0) {}
+    std::vector<std::vector<Graph::Vertex>> components;
+    std::vector<Graph::Vertex> current_component;
   };
 
-  void DFS_GraphSort(const Graph &graph, std::vector<bool> &visited, std::vector<Graph::Vertex> &sorted_graph,
+  void DFS_InvertGraph(const Graph &graph, std::vector<bool> &visited, std::vector<Graph::Vertex> &inverted_graph,
                    const Graph::Vertex &vertex) {
     visited[vertex] = true;
     for (auto neighbor : graph.GetAllNeighbors(vertex)) {
       if (!visited[neighbor]) {
-        DFS_GraphSort(graph, visited, sorted_graph, neighbor);
+        DFS_InvertGraph(graph, visited, inverted_graph, neighbor);
       }
     }
-    sorted_graph.push_back(vertex);
+    inverted_graph.push_back(vertex);
   }
 
-  void DFS_GetSCC(const Graph &graph, StronglyConnectedComponents &strongly_connected_components,
+  void DFS_GetSCC(const Graph &graph, std::vector<Graph::Vertex> &current_component,
                   std::vector<bool> &visited, const Graph::Vertex &vertex) {
     visited[vertex] = true;
-    strongly_connected_components.components[vertex] = strongly_connected_components.current_component;
+    current_component.push_back(vertex);
     for (auto neighbor : graph.GetAllNeighbors(vertex)) {
       if (!visited[neighbor]) {
-        DFS_GetSCC(graph, strongly_connected_components, visited, neighbor);
+        DFS_GetSCC(graph, current_component, visited, neighbor);
       }
     }
   }
 
-  std::vector<Graph::Vertex> GraphSort(const Graph &graph) {
+  std::vector<Graph::Vertex> InvertGraph(const Graph &graph) {
     std::vector<bool> visited(graph.GetVertexCount() + 1, false);
-    std::vector<Graph::Vertex> sorted_graph;
+    std::vector<Graph::Vertex> inverted_graph;
     for (Graph::Vertex vertex = 1; vertex < graph.GetVertexCount() + 1; ++vertex) {
       if (!visited[vertex]) {
-        DFS_GraphSort(graph, visited, sorted_graph, vertex);
+        DFS_InvertGraph(graph, visited, inverted_graph, vertex);
       }
     }
-    return {sorted_graph.rbegin(), sorted_graph.rend()};
+    return {inverted_graph.rbegin(), inverted_graph.rend()};
   }
 
-  StronglyConnectedComponents GetSCC(const Graph &transposed_graph, const std::vector<Graph::Vertex> &sorted_graph) {
+  StronglyConnectedComponents GetSCC(const Graph &transposed_graph, const std::vector<Graph::Vertex> &inverted_graph) {
     const size_t vertex_count = transposed_graph.GetVertexCount();
     std::vector<bool> visited(vertex_count + 1, false);
-    StronglyConnectedComponents strongly_connected_components(vertex_count);
-    for (Graph::Vertex vertex : sorted_graph) {
+    StronglyConnectedComponents scc;
+    for (Graph::Vertex vertex : inverted_graph) {
       if (!visited[vertex]) {
-        ++strongly_connected_components.current_component;
-        DFS_GetSCC(transposed_graph, strongly_connected_components, visited, vertex);
+        DFS_GetSCC(transposed_graph, scc.current_component, visited, vertex);
+        scc.components.push_back(scc.current_component);
+        scc.current_component.clear();
       }
     }
-    return strongly_connected_components;
+    return scc;
   }
 
   StronglyConnectedComponents CondenseGraph(const Graph &graph) {
-    std::vector<Graph::Vertex> sorted_graph = GraphSort(graph);
+    std::vector<Graph::Vertex> inverted_graph = InvertGraph(graph);
     auto transposed_graph_ptr = graph.Transpose();
-    return GetSCC(*transposed_graph_ptr, sorted_graph);
+    return GetSCC(*transposed_graph_ptr, inverted_graph);
   }
 }
 
@@ -152,16 +149,22 @@ int main() {
   std::cin >> n >> m;
   GraphAdjList graph_adj_list(n, true);
 
-  for (int i = 0; i < m; ++i) {
+  for (size_t i = 0; i < m; ++i) {
     Graph::Vertex start, finish;
     std::cin >> start >> finish;
     graph_adj_list.AddEdge(start, finish);
   }
 
   auto condense_graph = GraphProcessing::CondenseGraph(graph_adj_list);
-  std::cout << condense_graph.current_component << std::endl;
-  for (int i = 1; i < condense_graph.components.size(); ++i) {
-    std::cout << condense_graph.components[i] << ' ';
+  std::vector<size_t> vertex_position(n);
+  for (size_t i = 0; i < condense_graph.components.size(); ++i) {
+    for (Graph::Vertex vertex : condense_graph.components[i]) {
+      vertex_position[vertex - 1] = i + 1;
+    }
+  }
+  std::cout << condense_graph.components.size() << std::endl;
+  for (auto position : vertex_position) {
+    std::cout << position << ' ';
   }
 
   return 0;
