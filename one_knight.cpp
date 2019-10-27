@@ -19,6 +19,15 @@ Output format
 #include <queue>
 #include <map>
 
+struct KnightMove {
+  int dx;
+  int dy;
+
+  static std::vector<KnightMove> MakeKnightMoves() {
+    return {{2, 1}, {2, -1}, {-2, 1}, {-2 ,-1}, {1, 2}, {1, -2}, {-1, 2}, {-1, -2}};
+  }
+};
+
 class Graph {
  protected:
   size_t vertex_count_;
@@ -126,20 +135,19 @@ namespace GraphProcessing {
   }
 }
 
-bool IsValid(const Graph::Vertex &vertex, size_t vertex_num) {
+bool IsValid(const Graph::Vertex &vertex, size_t table_size) {
   return std::min(vertex.column, vertex.row) >= 1
-      && std::max(vertex.column, vertex.row) <= vertex_num;
+      && std::max(vertex.column, vertex.row) <= table_size;
 }
 
 GraphAdjList MakeAdjList(size_t vertex_num) {
   GraphAdjList graph_adj_list(vertex_num, true);
-  std::vector<int> delta_x = {2, 2, -2, -2, 1, 1, -1, -1};
-  std::vector<int> delta_y = {1, -1, 1, -1, 2, -2, 2, -2};
+  auto knight_moves = KnightMove::MakeKnightMoves();
   for (size_t i = 1; i <= vertex_num; ++i) {
     for (size_t j = 1; j <= vertex_num; ++j) {
       Graph::Vertex vertex{i, j};
-      for (size_t k = 0; k < delta_x.size(); ++k) {
-        Graph::Vertex neighbor{i + delta_x[k], j + delta_y[k]};
+      for (auto knight_move : knight_moves) {
+        Graph::Vertex neighbor{i + knight_move.dx, j + knight_move.dy};
         if (IsValid(neighbor, vertex_num)) {
           graph_adj_list.AddEdge(vertex, neighbor);
         }
