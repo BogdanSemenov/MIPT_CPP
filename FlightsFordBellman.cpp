@@ -24,7 +24,7 @@ Output format
 
 Выведите минимальное время, когда вы сможете оказаться в пункте B.
 
- Input	  Output
+ Input      Output
 2            0
 1 1
 2
@@ -67,18 +67,18 @@ struct Flights {
     arrival_time(arrival_time) {}
 };
 
-int FordBellman(std::vector<Flights> &flights, size_t start, size_t finish) {
+std::vector<int> GetMinTime(std::vector<Flights> &flights, const size_t start) {
   const int INF = std::numeric_limits<int>::max();
-  std::vector<int> distances(flights.size() + 1, INF);
-  distances[start] = 0;
+  std::vector<int> min_time(flights.size() + 1, INF);
+  min_time[start] = 0;
   for (int i = 0; i < flights.size(); ++i) {
     for (auto flight : flights) {
-      if (distances[flight.departure_place] <= flight.departure_time) {
-        distances[flight.arrival_place] = std::min(distances[flight.arrival_place], flight.arrival_time);
+      if (min_time[flight.departure_place] <= flight.departure_time) {
+        min_time[flight.arrival_place] = std::min(min_time[flight.arrival_place], flight.arrival_time);
       }
     }
   }
-  return distances[finish];
+  return min_time;
 }
 
 int main() {
@@ -95,7 +95,8 @@ int main() {
     flights.emplace_back(departure_place, departure_time, arrival_place, arrival_time);
   }
 
-  std::cout << FordBellman(flights, start, finish);
+  auto min_time = GetMinTime(flights, start);
+  std::cout << min_time[finish];
 
   return 0;
 }
