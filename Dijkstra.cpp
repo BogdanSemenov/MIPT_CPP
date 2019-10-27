@@ -25,7 +25,7 @@ Output format
  (гарантировано, что все реальные расстояния меньше).
 
 Examples
-Input	   Output
+Input       Output
 1        18 0 5 2 8
 5 7
 1 2 5
@@ -113,13 +113,29 @@ namespace GraphProcessing {
 
   const size_t INF = std::numeric_limits<size_t>::max();
 
-  struct GraphStatus {
+  struct Distance_Vertex {
+    size_t distance;
+    Graph::Vertex vertex;
+
+    Distance_Vertex(size_t distance, Graph::Vertex vertex)
+    : distance(distance),
+      vertex(vertex) {}
+
+    bool operator<(const Distance_Vertex &other) const {
+      return distance < other.distance;
+    }
+
+    bool operator>(const Distance_Vertex &other) const {
+      return distance > other.distance;
+    }
+  };
+
+  struct DijkstraInfo {
     std::vector<size_t> min_distance;
     std::vector<bool> visited;
-    std::priority_queue<std::pair<size_t, Graph::Vertex>, std::vector<std::pair<size_t, Graph::Vertex>>,
-                        std::greater<>> priority_queue;
+    std::priority_queue<Distance_Vertex, std::vector<Distance_Vertex>, std::greater<>> priority_queue;
 
-    explicit GraphStatus(size_t vertex_count, const Graph::Vertex &start)
+    explicit DijkstraInfo(size_t vertex_count, const Graph::Vertex &start)
         : min_distance(vertex_count, INF),
           visited(vertex_count, false) {
       min_distance[start] = 0;
@@ -127,29 +143,29 @@ namespace GraphProcessing {
     }
   };
 
-  void Relax(const Graph &graph, GraphStatus &graph_status, const Graph::Vertex &neighbor,
+  void Relax(const Graph &graph, DijkstraInfo &dijkstra_info, const Graph::Vertex &neighbor,
              const Graph::Vertex &vertex) {
     size_t weight = graph.GetWeight(vertex, neighbor);
-    if (graph_status.min_distance[neighbor] > weight + graph_status.min_distance[vertex]) {
-      graph_status.min_distance[neighbor] = weight + graph_status.min_distance[vertex];
-      graph_status.priority_queue.push({graph_status.min_distance[neighbor], neighbor});
+    if (dijkstra_info.min_distance[neighbor] > weight + dijkstra_info.min_distance[vertex]) {
+      dijkstra_info.min_distance[neighbor] = weight + dijkstra_info.min_distance[vertex];
+      dijkstra_info.priority_queue.push({dijkstra_info.min_distance[neighbor], neighbor});
     }
   }
 
   std::vector<size_t> GetMinDistances_Dijkstra(const Graph &graph, const Graph::Vertex &start) {
-    GraphStatus graph_status(graph.GetVertexCount(), start);
-    while (!graph_status.priority_queue.empty()) {
-      Graph::Vertex vertex = graph_status.priority_queue.top().second;
-      graph_status.priority_queue.pop();
-      if (graph_status.visited[vertex]) {
+    DijkstraInfo dijkstra_info(graph.GetVertexCount(), start);
+    while (!dijkstra_info.priority_queue.empty()) {
+      Graph::Vertex vertex = dijkstra_info.priority_queue.top().vertex;
+      dijkstra_info.priority_queue.pop();
+      if (dijkstra_info.visited[vertex]) {
         continue;
       }
-      graph_status.visited[vertex] = true;
+      dijkstra_info.visited[vertex] = true;
       for (const auto &neighbor : graph.GetAllNeighbors(vertex)) {
-        Relax(graph, graph_status, neighbor, vertex);
+        Relax(graph, dijkstra_info, neighbor, vertex);
       }
     }
-    return graph_status.min_distance;
+    return dijkstra_info.min_distance;
   }
 }
 
