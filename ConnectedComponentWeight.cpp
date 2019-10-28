@@ -62,7 +62,7 @@ class DSU {
     }
   }
 
-  int GetWeight(int x) {
+  int GetComponentWeight(int x) {
     int  x_predecessor = FindSet(x);
     return weight_[x_predecessor];
   }
@@ -72,6 +72,7 @@ int main() {
   size_t n, m;
   std::ios_base::sync_with_stdio(false);
   std::cin.tie(nullptr);
+  std::cout.tie(nullptr);
   std::cin >> n >> m;
   DSU dsu(n);
 
@@ -86,7 +87,7 @@ int main() {
     } else if (action == 2) {
       size_t vertex;
       std::cin >> vertex;
-      std::cout << dsu.GetWeight(vertex) << std::endl;
+      std::cout << dsu.GetComponentWeight(vertex) << std::endl;
     }
   }
 
