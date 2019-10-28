@@ -16,7 +16,7 @@ class Graph {
     int column;
 
     Vertex() : column(0), row(0) {}
-    Vertex(int row, int column) :  row(row), column(column) {}
+    Vertex(int row, int column) : row(row), column(column) {}
 
     bool operator!=(const Vertex &other) {
       return column != other.column || row != other.row;
@@ -91,12 +91,18 @@ namespace GraphProcessing {
     }
   }
 
-  int GetMinPath(const Graph &graph, const Graph::Vertex &start, const Graph::Vertex &finish, int n, int m) {
-    std::map<Graph::Vertex, int> min_distances;
-    InitializeMap(n, m, min_distances, NOT_SET);
+  int GetMinDistanceToFinishVertex(const Graph &graph, std::map<Graph::Vertex, int> &min_distances,
+                                   const Graph::Vertex &start, const Graph::Vertex &finish) {
     BFS(graph, start, min_distances);
     return min_distances[finish];
   }
+}
+
+int GetMinDistanceToFinishVertexForTable(const Graph &graph, const Graph::Vertex &start, const Graph::Vertex &finish,
+                                         const size_t height, const size_t width) {
+  std::map<Graph::Vertex, int> min_distances;
+  InitializeMap(height, width, min_distances, GraphProcessing::NOT_SET);
+  return GraphProcessing::GetMinDistanceToFinishVertex(graph, min_distances, start, finish);
 }
 
 void MoveLeft(int x_coord, int y_coord, int &delta_left, const std::vector<std::vector<int>> &matrix) {
@@ -188,7 +194,7 @@ int main() {
     }
   }
   GraphAdjList graph_adj_list = MakeAdjList(matrix);
-  std::cout << GraphProcessing::GetMinPath(graph_adj_list, start, finish, n, m);
+  std::cout << GetMinDistanceToFinishVertexForTable(graph_adj_list, start, finish, n, m);
 
   return 0;
 }
