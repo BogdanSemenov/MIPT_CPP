@@ -20,6 +20,15 @@ Output format
 #include <queue>
 #include <map>
 
+struct SquareMove {
+  int dx;
+  int dy;
+
+  static std::vector<SquareMove> MakeSquareMoves() {
+    return {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
+  }
+};
+
 class Graph {
  protected:
   size_t vertex_count_;
@@ -138,13 +147,12 @@ bool IsValid(const Graph::Vertex &vertex, const size_t height, const size_t widt
 
 GraphAdjList MakeAdjList(size_t height, size_t width) {
   GraphAdjList graph_adj_list(height * width, true);
-  std::vector<int> delta_x = {0, 0, 1, -1};
-  std::vector<int> delta_y = {1, -1, 0, 0};
+  auto square_moves = SquareMove::MakeSquareMoves();
   for (size_t i = 1; i <= height; ++i) {
     for (size_t j = 1; j <= width; ++j) {
       Graph::Vertex vertex{i, j};
-      for (size_t k = 0; k < delta_x.size(); ++k) {
-        Graph::Vertex neighbor{i + delta_y[k], j + delta_x[k]};
+      for (auto square_move : square_moves) {
+        Graph::Vertex neighbor{i + square_move.dy, j + square_move.dx};
         if (IsValid(neighbor, height, width)) {
           graph_adj_list.AddEdge(vertex, neighbor);
         }
