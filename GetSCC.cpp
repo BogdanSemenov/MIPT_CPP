@@ -85,20 +85,17 @@ class GraphAdjList : public Graph {
 
 namespace GraphProcessing {
 
-  struct StronglyConnectedComponents {
-    std::vector<std::vector<Graph::Vertex>> components;
-    std::vector<Graph::Vertex> current_component;
-  };
+  typedef std::vector<std::vector<Graph::Vertex>> StronglyConnectedComponents;
 
-  void DFS_InvertGraph(const Graph &graph, std::vector<bool> &visited, std::vector<Graph::Vertex> &inverted_graph,
+  void DFS_TopSortedOrder(const Graph &graph, std::vector<bool> &visited, std::vector<Graph::Vertex> &topsorted_order,
                    const Graph::Vertex &vertex) {
     visited[vertex] = true;
     for (auto neighbor : graph.GetAllNeighbors(vertex)) {
       if (!visited[neighbor]) {
-        DFS_InvertGraph(graph, visited, inverted_graph, neighbor);
+        DFS_TopSortedOrder(graph, visited, topsorted_order, neighbor);
       }
     }
-    inverted_graph.push_back(vertex);
+    topsorted_order.push_back(vertex);
   }
 
   void DFS_GetSCC(const Graph &graph, std::vector<Graph::Vertex> &current_component,
@@ -112,35 +109,36 @@ namespace GraphProcessing {
     }
   }
 
-  std::vector<Graph::Vertex> InvertGraph(const Graph &graph) {
+  std::vector<Graph::Vertex> GetTopSortedOrder(const Graph &graph) {
     std::vector<bool> visited(graph.GetVertexCount() + 1, false);
-    std::vector<Graph::Vertex> inverted_graph;
+    std::vector<Graph::Vertex> topsorted_order;
     for (Graph::Vertex vertex = 1; vertex < graph.GetVertexCount() + 1; ++vertex) {
       if (!visited[vertex]) {
-        DFS_InvertGraph(graph, visited, inverted_graph, vertex);
+        DFS_TopSortedOrder(graph, visited, topsorted_order, vertex);
       }
     }
-    return {inverted_graph.rbegin(), inverted_graph.rend()};
+    return {topsorted_order.rbegin(), topsorted_order.rend()};
   }
 
-  StronglyConnectedComponents GetSCC(const Graph &transposed_graph, const std::vector<Graph::Vertex> &inverted_graph) {
+  StronglyConnectedComponents GetSCC(const Graph &transposed_graph, const std::vector<Graph::Vertex> &topsorted_order) {
     const size_t vertex_count = transposed_graph.GetVertexCount();
     std::vector<bool> visited(vertex_count + 1, false);
     StronglyConnectedComponents scc;
-    for (Graph::Vertex vertex : inverted_graph) {
+    std::vector<Graph::Vertex> current_component;
+    for (Graph::Vertex vertex : topsorted_order) {
       if (!visited[vertex]) {
-        DFS_GetSCC(transposed_graph, scc.current_component, visited, vertex);
-        scc.components.push_back(scc.current_component);
-        scc.current_component.clear();
+        DFS_GetSCC(transposed_graph, current_component, visited, vertex);
+        scc.push_back(current_component);
+        current_component.clear();
       }
     }
     return scc;
   }
 
   StronglyConnectedComponents CondenseGraph(const Graph &graph) {
-    std::vector<Graph::Vertex> inverted_graph = InvertGraph(graph);
+    std::vector<Graph::Vertex> topsorted_order = GetTopSortedOrder(graph);
     auto transposed_graph_ptr = graph.Transpose();
-    return GetSCC(*transposed_graph_ptr, inverted_graph);
+    return GetSCC(*transposed_graph_ptr, topsorted_order);
   }
 }
 
@@ -157,12 +155,12 @@ int main() {
 
   auto condense_graph = GraphProcessing::CondenseGraph(graph_adj_list);
   std::vector<size_t> vertex_position(n);
-  for (size_t i = 0; i < condense_graph.components.size(); ++i) {
-    for (Graph::Vertex vertex : condense_graph.components[i]) {
+  for (size_t i = 0; i < condense_graph.size(); ++i) {
+    for (Graph::Vertex vertex : condense_graph[i]) {
       vertex_position[vertex - 1] = i + 1;
     }
   }
-  std::cout << condense_graph.components.size() << std::endl;
+  std::cout << condense_graph.size() << std::endl;
   for (auto position : vertex_position) {
     std::cout << position << ' ';
   }
