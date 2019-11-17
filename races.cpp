@@ -105,49 +105,33 @@ int GetMinDistanceToFinishVertexForTable(const Graph &graph, const Graph::Vertex
   return GraphProcessing::GetMinDistanceToFinishVertex(graph, min_distances, start, finish);
 }
 
-void MoveLeft(int x_coord, int y_coord, int &delta_left, const std::vector<std::vector<int>> &matrix) {
-  for (int k = x_coord; k > 0 && matrix[y_coord][k] != 0; --k) {
-    --delta_left;
-  }
-}
-
-void MoveRight(int x_coord, int y_coord, int &delta_right, const std::vector<std::vector<int>> &matrix) {
-  for (int k = x_coord; k < matrix[0].size() && matrix[y_coord][k] != 0; ++k) {
-    ++delta_right;
-  }
-}
-
-void MoveUp(int x_coord, int y_coord, int &delta_up, const std::vector<std::vector<int>> &matrix) {
-  for (int k = y_coord; k > 0 && matrix[k][x_coord] != 0; --k) {
-    --delta_up;
-  }
-}
-
-void MoveDown(int x_coord, int y_coord, int &delta_down, const std::vector<std::vector<int>> &matrix) {
-  for (int k = y_coord; k < matrix.size() && matrix[k][x_coord] != 0; ++k) {
-    ++delta_down;
-  }
-}
-
 void MakeMove(int x_coord, int y_coord, Graph::Vertex &left, Graph::Vertex &right,
               Graph::Vertex &up, Graph::Vertex &down, const std::vector<std::vector<int>> &matrix) {
-  MoveLeft(x_coord, y_coord, left.column, matrix);
-  MoveRight(x_coord, y_coord, right.column, matrix);
-  MoveUp(x_coord, y_coord, up.row, matrix);
-  MoveDown(x_coord, y_coord, down.row, matrix);
+  for (int k = x_coord; k > 0 && matrix[y_coord][k] != 0; --k) {
+    --left.column;
+  }
+  for (int k = x_coord; k < matrix[0].size() && matrix[y_coord][k] != 0; ++k) {
+    ++right.column;
+  }
+  for (int k = y_coord; k > 0 && matrix[k][x_coord] != 0; --k) {
+    --up.row;
+  }
+  for (int k = y_coord; k < matrix.size() && matrix[k][x_coord] != 0; ++k) {
+    ++down.row;
+  }
 }
 
-std::vector<Graph::Vertex> MakeNeighbours(int x_coord, int y_coord, Graph::Vertex &left, Graph::Vertex &right,
-                                          Graph::Vertex &up, Graph::Vertex &down) {
+std::vector<Graph::Vertex> MakeNeighbours(int x_coord, int y_coord, std::vector<Graph::Vertex> vertices_column_change,
+                                          std::vector<Graph::Vertex> vertices_row_change) {
   std::vector<Graph::Vertex> neighbors;
-  left.column = x_coord + left.column / 2;
-  neighbors.push_back(left);
-  right.column = x_coord + right.column / 2;
-  neighbors.push_back(right);
-  up.row = y_coord + up.row / 2;
-  neighbors.push_back(up);
-  down.row = y_coord + down.row / 2;
-  neighbors.push_back(down);
+  for (auto &vertex : vertices_column_change) {
+    vertex.column = x_coord + vertex.column / 2;
+    neighbors.push_back(vertex);
+  }
+  for (auto &vertex : vertices_row_change) {
+    vertex.row = y_coord + vertex.row / 2;
+    neighbors.push_back(vertex);
+  }
   return neighbors;
 }
 
@@ -163,7 +147,7 @@ GraphAdjList MakeAdjList(const std::vector<std::vector<int>> &matrix) {
         left.row = right.row = i;
         up.column = down.column = j;
         MakeMove(j, i, left, right, up, down, matrix);
-        std::vector<Graph::Vertex> neighbors = MakeNeighbours(j, i, left, right, up, down);
+        std::vector<Graph::Vertex> neighbors = MakeNeighbours(j, i, {left, right}, {up, down});
         for (auto neighbor : neighbors) {
           graph_adj_list.AddEdge(vertex, neighbor);
         }
