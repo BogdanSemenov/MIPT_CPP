@@ -40,7 +40,7 @@ Output format
  если бензовоз с баком вместимостью bi сможет доехать от перекрёстка xi до перекрёстка yi,
  и NIE в противном случае.
 
-Input	    Output
+Input        Output
 6 4 5         TAK
 1 5 2 6       TAK
 1 3 1         TAK
@@ -204,7 +204,7 @@ namespace GraphProcessing {
     }
   };
 
-  typedef std::priority_queue<Distance_Vertex, std::vector<Distance_Vertex>, std::greater<>> PriorityQueue;
+  typedef std::priority_queue<Distance_Vertex, std::vector<Distance_Vertex>, std::greater<Distance_Vertex>> PriorityQueue;
 
   void Relax(const Graph &graph, std::vector<size_t> &min_distance, const Graph::Vertex &neighbor,
              const Graph::Vertex &vertex, PriorityQueue &priority_queue) {
@@ -248,29 +248,36 @@ struct PathInfo {
     return edge.weight < path_info.edge.weight || (edge.weight == path_info.edge.weight && id < path_info.id);
   }
 
+  bool operator==(const PathInfo &path_info) const {
+    return edge.weight == path_info.edge.weight && id == path_info.id;
+  }
+
   bool operator>(const PathInfo &path_info) const {
-    return edge.weight > path_info.edge.weight || (edge.weight == path_info.edge.weight && id > path_info.id);
+    return !(*this < path_info || *this == path_info);
   }
 };
 
-std::vector<bool> PossibilityToMoveFromStartToFinish(const Graph &graph, const std::vector<Graph::Vertex> &gas_stations,
-                                                     const size_t quires_num, const std::vector<Graph::Edge> &edges,
-                                                     std::priority_queue<PathInfo, std::vector<PathInfo>,
-                                                                         std::greater<>> &path_info) {
-  int NOT_SET = -1;
-  std::vector<Graph::Vertex> vertices(graph.GetVertexCount());
+std::vector<Graph::Vertex> GenerateVerticesVector(size_t vector_size) {
+  std::vector<Graph::Vertex> vertices(vector_size);
   Graph::Vertex vertex(1);
   std::generate(vertices.begin(), vertices.end(), [&vertex] {
     return vertex++;
   });
+  return vertices;
+}
 
+std::vector<bool> PossibilityToMoveFromStartToFinish(const Graph &graph, const std::vector<Graph::Vertex> &gas_stations,
+                                                     const size_t quires_num, const std::vector<Graph::Edge> &edges,
+                                                     std::priority_queue<PathInfo, std::vector<PathInfo>,
+                                                                         std::greater<PathInfo>> &path_info) {
+  int NOT_SET = -1;
   auto min_distances = GraphProcessing::GetMinDistances_Dijkstra(graph, gas_stations);
   for (const auto &edge : edges) {
     path_info.push({{edge.from, edge.to, edge.weight + min_distances[edge.from] + min_distances[edge.to]}, NOT_SET,
                     true});
   }
 
-  DSU<Graph::Vertex> dsu(vertices);
+  DSU<Graph::Vertex> dsu(GenerateVerticesVector(graph.GetVertexCount()));
   std::vector<bool> possibility_to_move_from_start_to_finish(quires_num);
   while (!path_info.empty()) {
     auto edge_info = path_info.top();
@@ -292,7 +299,7 @@ int main() {
   std::cin >> vertex_num >> gas_station_num >> edges_num;
 
   std::vector<Graph::Vertex> gas_stations(gas_station_num);
-  std::priority_queue<PathInfo, std::vector<PathInfo>, std::greater<>> path_info;
+  std::priority_queue<PathInfo, std::vector<PathInfo>, std::greater<PathInfo>> path_info;
   std::vector<Graph::Edge> edges;
   for (size_t i = 0; i < gas_station_num; ++i) {
     std::cin >> gas_stations[i];
@@ -310,9 +317,9 @@ int main() {
     edges.push_back({start, finish, weight});
   }
 
-  size_t require_num;
-  std::cin >> require_num;
-  for (size_t i = 0; i < require_num; ++i) {
+  size_t queries_num;
+  std::cin >> queries_num;
+  for (size_t i = 0; i < queries_num; ++i) {
     Graph::Vertex start, finish;
     size_t weight;
     std::cin >> start >> finish >> weight;
@@ -320,7 +327,7 @@ int main() {
   }
 
   std::vector<bool> result =
-      PossibilityToMoveFromStartToFinish(graph_adj_list, gas_stations, require_num, edges, path_info);
+      PossibilityToMoveFromStartToFinish(graph_adj_list, gas_stations, queries_num, edges, path_info);
   for (const auto &res : result) {
     std::cout << (res ? "TAK" : "NIE") << std::endl;
   }
