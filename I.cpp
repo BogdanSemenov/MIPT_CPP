@@ -86,7 +86,7 @@ int main() {
   std::cin >> query;
   while (query != 3) {
     if (query == 1) {
-      size_t x, y, z;
+      int64_t x, y, z;
       int64_t value;
       std::cin >> x >> y >> z >> value;
       fenwick_tree.Update(Point(x, y, z), value);
