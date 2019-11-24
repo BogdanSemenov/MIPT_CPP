@@ -10,9 +10,10 @@ template<typename T>
 class SegmentTree {
  private:
   struct Node {
-    T max_;
-    size_t max_count_;
-    static constexpr T pending_value_ = T(0);
+    T min_;
+    T sum_;
+    static constexpr T min_pending_value_ = std::numeric_limits<T>::max();
+    static constexpr T sum_pending_value_ = T(0);
 
     Node();
 
@@ -38,45 +39,57 @@ class SegmentTree {
     return idx * 2 + 1;
   }
 
-  struct Max_ {
-    Node operator()(const Node &lhs, const Node &rhs) const;
+  struct Summary_ {
+    T operator()(const Node &lhs, const Node &rhs) const;
+
+    T operator()(const T &value, const Node &node) const;
+  };
+
+  struct Min_ {
+    T operator()(const Node &lhs, const Node &rhs) const;
+
+    T operator()(const T &value, const Node &node) const;
   };
 
   template<typename BinaryOperation>
-  Node Query(size_t left, size_t right, const BinaryOperation &binary_operation) const;
+  T Query(size_t left, size_t right, const BinaryOperation &binary_operation, const T &pending_value) const;
 
  public:
   explicit SegmentTree(const std::vector<T> &values);
 
-  Node RmaxQ(size_t left, size_t right) const;
+  void Update(size_t idx, const T &value);
+
+  T RSQ(size_t left, size_t right) const;
+
+  T RMQ(size_t left, size_t right) const;
 };
 
 ////////////////////////////// class SegmentTree (Implementation) //////////////////////////////
 
 template<typename T>
 SegmentTree<T>::Node::Node() {
-  max_ = pending_value_;
-  max_count_ = pending_value_;
+  min_ = min_pending_value_;
+  sum_ = sum_pending_value_;
 }
 
 template<typename T>
 SegmentTree<T>::Node::Node(const Node &first, const Node &second) {
-  Node node = Max_()(first, second);
-  max_ = node.max_;
-  max_count_ = node.max_count_;
+  sum_ = Summary_()(first, second);
+  min_ = Min_()(first, second);
 }
 
 template<typename T>
 typename SegmentTree<T>::Node &SegmentTree<T>::Node::operator=(const T &value) {
-  max_ = value;
-  max_count_ = 1;
+  min_ = value;
+  sum_ = value;
   return *this;
 }
 
 template<typename T>
 template<typename BinaryOperation>
-typename SegmentTree<T>::Node SegmentTree<T>::Query(size_t left, size_t right, const BinaryOperation &binary_operation) const {
-  Node answer = Node();
+T SegmentTree<T>::Query(size_t left, size_t right, const BinaryOperation &binary_operation,
+                        const T &pending_value) const {
+  T answer = pending_value;
   const size_t tree_size = segment_tree_.size();
   left += tree_size / 2;
   right += tree_size / 2;
@@ -108,15 +121,23 @@ size_t SegmentTree<T>::PowerOfTwo_Ceil(size_t value) {
 }
 
 template<typename T>
-typename SegmentTree<T>::Node SegmentTree<T>::Max_::operator()(const Node &lhs, const Node &rhs) const {
-  Node node;
-  node.max_ = std::max(lhs.max_, rhs.max_);
-  if (lhs.max_ == rhs.max_) {
-    node.max_count_ = lhs.max_count_ + rhs.max_count_;
-  } else {
-    node.max_count_ = (lhs.max_ > rhs.max_) ? lhs.max_count_ : rhs.max_count_;
-  }
-  return node;
+T SegmentTree<T>::Summary_::operator()(const Node &lhs, const Node &rhs) const {
+  return lhs.sum_ + rhs.sum_;
+}
+
+template<typename T>
+T SegmentTree<T>::Summary_::operator()(const T &value, const Node &node) const {
+  return value + node.sum_;
+}
+
+template<typename T>
+T SegmentTree<T>::Min_::operator()(const Node &lhs, const Node &rhs) const {
+  return std::min(lhs.min_, rhs.min_);
+}
+
+template<typename T>
+T SegmentTree<T>::Min_::operator()(const T &value, const Node &node) const {
+  return std::min(value, node.min_);
 }
 
 template<typename T>
@@ -136,8 +157,22 @@ SegmentTree<T>::SegmentTree(const std::vector<T> &values)
 }
 
 template<typename T>
-typename SegmentTree<T>::Node SegmentTree<T>::RmaxQ(size_t left, size_t right) const {
-  return Query(left, right, Max_());
+void SegmentTree<T>::Update(size_t idx, const T &value) {
+  idx += segment_tree_.size() / 2;
+  segment_tree_[idx] = value;
+  while ((idx = Parent(idx)) > 0) {
+    segment_tree_[idx] = Node(segment_tree_[LeftChild(idx)], segment_tree_[RightChild(idx)]);
+  }
+}
+
+template<typename T>
+T SegmentTree<T>::RSQ(size_t left, size_t right) const {
+  return Query(left, right, Summary_(), Node::sum_pending_value_);
+}
+
+template<typename T>
+T SegmentTree<T>::RMQ(size_t left, size_t right) const {
+  return Query(left, right, Min_(), Node::min_pending_value_);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -154,10 +189,18 @@ int main() {
   size_t quires_num;
   std::cin >> quires_num;
   for (size_t i = 0; i < quires_num; ++i) {
-    size_t left, right;
-    std::cin >> left >> right;
-    auto node = segment_tree.RmaxQ(left - 1, right - 1);
-    std::cout << node.max_ << ' ' << node.max_count_ << std::endl;
+    char query;
+    std::cin >> query;
+    if (query == 's') {
+      size_t left, right;
+      std::cin >> left >> right;
+      std::cout << segment_tree.RSQ(left - 1, right - 1) << ' ';
+    } else if (query == 'u') {
+      size_t idx;
+      int64_t value;
+      std::cin >> idx >> value;
+      segment_tree.Update(idx - 1, value);
+    }
   }
 
   return 0;
