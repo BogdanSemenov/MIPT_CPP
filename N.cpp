@@ -10,11 +10,9 @@
 ////////////////////////////// class FlowNetwork //////////////////////////////
 
 class FlowNetwork {
- public:
+ private:
   typedef size_t Vertex;
   typedef int64_t Flow;
-
-  FlowNetwork::Flow GetMaxFlow_EdmondsKarp();
 
   struct FlowEdge {
     Vertex from;
@@ -33,15 +31,6 @@ class FlowNetwork {
     FlowEdge *back_edge;
   };
 
-  FlowNetwork(size_t vertex_count, size_t edges_count, const Vertex &source, const Vertex &termination);
-  void AddEdge(const Vertex &from, const Vertex &to, const Flow &capacity, size_t index);
-  Vertex GetSource() const;
-  Vertex GetTermination() const;
-  size_t GetVertexCount() const;
-  FlowEdge &GetBackEdge(size_t index);
-  std::vector<size_t> GetEdgesIndicesIncidentOn(const Vertex &vertex) const;
-
- private:
   std::vector<FlowEdge> index_edge_;
   std::vector<std::vector<size_t>> adj_list_;
   std::vector<bool> visited_;
@@ -50,6 +39,17 @@ class FlowNetwork {
   Vertex source_, termination_;
   std::vector<FlowEdgePair> predecessors_;
   bool HasIncreasingPath();
+    
+ public:
+
+  FlowNetwork::Flow GetMaxFlow_EdmondsKarp();
+  FlowNetwork(size_t vertex_count, size_t edges_count, const Vertex &source, const Vertex &termination);
+  void AddEdge(const Vertex &from, const Vertex &to, const Flow &capacity, size_t index);
+  Vertex GetSource() const;
+  Vertex GetTermination() const;
+  size_t GetVertexCount() const;
+  FlowEdge &GetBackEdge(size_t index);
+  std::vector<size_t> GetEdgesIndicesIncidentOn(const Vertex &vertex) const;
 };
 
 
@@ -164,8 +164,8 @@ int main() {
   std::cin >> vertex_count >> edge_count;
   FlowNetwork flow_network(vertex_count, edge_count, 0, vertex_count - 1);
   for (size_t i = 0; i < edge_count; ++i) {
-    FlowNetwork::Vertex from, to;
-    FlowNetwork::Flow capacity;
+    size_t from, to;
+    int64_t capacity;
     std::cin >> from >> to >> capacity;
     flow_network.AddEdge(from - 1, to - 1, capacity, i);
   }
