@@ -6,7 +6,7 @@
 ////////////////////////////// class FlowNetwork //////////////////////////////
 
 class FlowNetwork {
- public:
+ private:
   typedef size_t Vertex;
   typedef int64_t Flow;
 
@@ -21,6 +21,15 @@ class FlowNetwork {
     Flow ResidualCapacity() const;
   };
 
+  std::vector<FlowEdge> index_edge_;
+  std::vector<std::vector<size_t>> adj_list_;
+  std::vector<bool> visited_;
+  size_t vertex_count_;
+  size_t edge_count_;
+  Vertex source_, termination_;
+  Flow DFS(const Vertex &vertex, const Flow &flow_upper_bound);
+    
+ public:
   FlowNetwork(size_t vertex_count, size_t edges_count, const Vertex &source, const Vertex &termination);
   Flow GetMaxFlow_FordFulkerson();
   Flow PushFlow(const Vertex &vertex, const Flow &flow_upper_bound);
@@ -30,15 +39,6 @@ class FlowNetwork {
   size_t GetVertexCount() const;
   FlowEdge &GetBackEdge(size_t index);
   std::vector<size_t> GetEdgesIndicesIncidentOn(const Vertex &vertex) const;
-
- private:
-  std::vector<FlowEdge> index_edge_;
-  std::vector<std::vector<size_t>> adj_list_;
-  std::vector<bool> visited_;
-  size_t vertex_count_;
-  size_t edge_count_;
-  Vertex source_, termination_;
-  Flow DFS(const Vertex &vertex, const Flow &flow_upper_bound);
 };
 
 ////////////////////////////// class FlowNetwork //////////////////////////////
@@ -139,8 +139,8 @@ int main() {
   std::cin >> vertex_count >> edge_count;
   FlowNetwork flow_network(vertex_count, edge_count, 0, vertex_count - 1);
   for (size_t i = 0; i < edge_count; ++i) {
-    FlowNetwork::Vertex from, to;
-    FlowNetwork::Flow capacity;
+    size_t from, to;
+    int64_t capacity;
     std::cin >> from >> to >> capacity;
     flow_network.AddEdge(from - 1, to - 1, capacity, i);
   }
