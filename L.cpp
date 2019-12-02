@@ -24,22 +24,22 @@ class Treap : public SetInterface<KeyType> {
  private:
   struct TreapNode;
   std::mt19937 random_priority_generator;
-  mutable std::shared_ptr<TreapNode> root_;
+  std::shared_ptr<TreapNode> root_;
 
   bool FindKey(const KeyType &key, std::shared_ptr<TreapNode> treap_node) const;
 
   static std::pair<std::shared_ptr<TreapNode>, std::shared_ptr<TreapNode>> Split(std::shared_ptr<TreapNode> node,
-                                                                                 const KeyType &key);
+                                                                          const KeyType &key);
 
   static std::shared_ptr<TreapNode> Merge(std::shared_ptr<TreapNode> left_node,
-                                          std::shared_ptr<TreapNode> right_node);
+                                   std::shared_ptr<TreapNode> right_node);
 
   KeyType GetKthSmallestElement(std::shared_ptr<TreapNode> treap_node, size_t k) const;
 
   int GenerateRandomPriority();
 
  public:
-  Treap() = default;
+  explicit Treap() = default;
 
   bool FindKey(const KeyType &key) const override;
 
@@ -49,11 +49,7 @@ class Treap : public SetInterface<KeyType> {
 
   void Insert(const KeyType &key, int priority);
 
-  KeyType LowerBound(const KeyType &key) const;
-
-  KeyType UpperBound(const KeyType &key) const;
-
-  KeyType GetKthSmallestElement(size_t k) const;
+  KeyType GetSum(const KeyType &left, const KeyType &right);
 };
 
 ////////////////////////////// class TreapNode //////////////////////////////
@@ -61,6 +57,8 @@ class Treap : public SetInterface<KeyType> {
 template<typename KeyType>
 struct Treap<KeyType>::TreapNode {
   KeyType key_;
+
+  KeyType sum_;
 
   int priority_;
 
@@ -72,7 +70,7 @@ struct Treap<KeyType>::TreapNode {
   explicit TreapNode() = default;
 
   explicit TreapNode(const KeyType &key, const int priority, const size_t size = 1)
-      : key_(key), priority_(priority), size_(size) {}
+      : key_(key), priority_(priority), size_(size), sum_(key) {}
 
   enum class ChildType {
     LeftChild,
@@ -91,11 +89,16 @@ struct Treap<KeyType>::TreapNode {
     return treap_node ? treap_node->size_ : 0;
   }
 
-  static void UpdateSize(std::shared_ptr<TreapNode> treap_node) {
+  static KeyType GetSum(std::shared_ptr<TreapNode> treap_node) {
+    return treap_node ? treap_node->sum_ : 0;
+  }
+
+  static void Update(std::shared_ptr<TreapNode> treap_node) {
     if (treap_node == nullptr) {
       return;
     }
     treap_node->size_ = GetSize(treap_node->left_child_) + GetSize(treap_node->right_child_) + 1;
+    treap_node->sum_ = GetSum(treap_node->left_child_) + GetSum(treap_node->right_child_) + treap_node->key_;
   }
 };
 
@@ -116,11 +119,11 @@ Treap<KeyType>::Merge(std::shared_ptr<TreapNode> left_node,
   }
   if (left_node->priority_ < right_node->priority_) {
     right_node->SetChild(Merge(left_node, right_node->left_child_), TreapNode::ChildType::LeftChild);
-    TreapNode::UpdateSize(right_node);
+    TreapNode::Update(right_node);
     return right_node;
   } else {
     left_node->SetChild(Merge(left_node->right_child_, right_node), TreapNode::ChildType::RightChild);
-    TreapNode::UpdateSize(left_node);
+    TreapNode::Update(left_node);
     return left_node;
   }
 }
@@ -135,12 +138,12 @@ Treap<KeyType>::Split(std::shared_ptr<TreapNode> node,
   } else if (key < node->key_) {
     auto[left_node, right_node] = Split(node->left_child_, key);
     node->SetChild(right_node, TreapNode::ChildType::LeftChild);
-    TreapNode::UpdateSize(node);
+    TreapNode::Update(node);
     return {left_node, node};
   } else {
     auto[left_node, right_node] = Split(node->right_child_, key);
     node->SetChild(left_node, TreapNode::ChildType::RightChild);
-    TreapNode::UpdateSize(node);
+    TreapNode::Update(node);
     return {node, right_node};
   }
 }
@@ -176,36 +179,6 @@ void Treap<KeyType>::Remove(const KeyType &key) {
 }
 
 template<typename KeyType>
-KeyType Treap<KeyType>::LowerBound(const KeyType &key) const {
-  constexpr KeyType NOT_SET(-1);
-  auto[left_node, right_node] = Split(root_, key);
-  auto move_left = right_node;
-  if (right_node == nullptr) {
-    return NOT_SET;
-  }
-  while (move_left->left_child_) {
-    move_left = move_left->left_child_;
-  }
-  root_ = Merge(left_node, right_node);
-  return move_left->key_;
-}
-
-template<typename KeyType>
-KeyType Treap<KeyType>::UpperBound(const KeyType &key) const {
-  constexpr KeyType NOT_SET(-1);
-  auto[left_node, right_node] = Split(root_, key - 1);
-  auto move_right = left_node;
-  if (left_node == nullptr) {
-    return NOT_SET;
-  }
-  while (move_right->right_child_) {
-    move_right = move_right->right_child_;
-  }
-  root_ = Merge(left_node, right_node);
-  return move_right->key_;
-}
-
-template<typename KeyType>
 bool Treap<KeyType>::FindKey(const KeyType &key, std::shared_ptr<TreapNode> treap_node) const {
   if (treap_node == nullptr) {
     return false;
@@ -220,60 +193,38 @@ bool Treap<KeyType>::FindKey(const KeyType &key, std::shared_ptr<TreapNode> trea
 }
 
 template<typename KeyType>
-KeyType Treap<KeyType>::GetKthSmallestElement(std::shared_ptr<TreapNode> treap_node, size_t k) const {
-  constexpr KeyType NOT_SET(-1);
-  if (treap_node == nullptr) {
-    return NOT_SET;
-  }
-  const size_t left_side_size = TreapNode::GetSize(treap_node->left_child_);
-  if (left_side_size == k - 1) {
-    return treap_node->key_;
-  } else if (left_side_size < k - 1) {
-    return GetKthSmallestElement(treap_node->right_child_, k - left_side_size - 1);
-  } else {
-    return GetKthSmallestElement(treap_node->left_child_, k);
-  }
-}
-
-template<typename KeyType>
-KeyType Treap<KeyType>::GetKthSmallestElement(size_t k) const {
-  return GetKthSmallestElement(root_, k);
+KeyType Treap<KeyType>::GetSum(const KeyType &left, const KeyType &right){
+  auto[first_left_node, first_right_node] = Split(root_, right);
+  auto[second_left_node, second_right_node] = Split(first_left_node, left - 1);
+  KeyType result_sum = TreapNode::GetSum(second_right_node);
+  root_ = Merge(Merge(second_left_node, second_right_node), first_right_node);
+  return result_sum;
 }
 
 int main() {
+  constexpr size_t MOD = 1000000000;
+  size_t query_num;
+  std::ios_base::sync_with_stdio(false);
+  std::cin.tie(nullptr);
+  std::cout.tie(nullptr);
+  std::cin >> query_num;
   Treap<int64_t> treap;
-  std::string query;
-  while (std::cin >> query) {
-    int64_t key;
-    std::cin >> key;
-    if (query == "insert") {
-      treap.Insert(key);
-    } else if (query == "delete") {
-      treap.Remove(key);
-    } else if (query == "exists") {
-      std::cout << (treap.FindKey(key) ? "true\n" : "false\n");
-    } else if (query == "next") {
-      int64_t answer = treap.LowerBound(key);
-      if (answer == -1) {
-        std::cout << "none\n";
-      } else {
-        std::cout << answer << std::endl;
-      }
-    } else if (query == "prev") {
-      int64_t answer = treap.UpperBound(key);
-      if (answer == -1) {
-        std::cout << "none\n";
-      } else {
-        std::cout << answer << std::endl;
-      }
-    } else if (query == "kth") {
-      int64_t answer = treap.GetKthSmallestElement(key);
-      if (answer == -1) {
-        std::cout << "none\n";
-      } else {
-        std::cout << answer << std::endl;
-      }
+  int64_t sum = 0;
+  for (size_t i = 0; i < query_num; ++i) {
+    char query;
+    std::cin >> query;
+    if (query == '+') {
+      int64_t key;
+      std::cin >> key;
+      treap.Insert((key + sum) % MOD);
+      sum = 0;
+    } else if (query == '?') {
+      int64_t left, right;
+      std::cin >> left >> right;
+      sum = treap.GetSum(left, right);
+      std::cout << sum << std::endl;
     }
   }
+
   return 0;
 }
