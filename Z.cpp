@@ -34,6 +34,11 @@ std::vector<int > GetPrefixFromZFunction(const std::vector<int> &z_func) {
   return prefix_func;
 }
 
+std::string GetStringFromZFunction(const std::vector<int> &z_func) {
+  auto prefix_func = GetPrefixFromZFunction(z_func);
+  return GetStringFromPrefixFunction(prefix_func);
+}
+
 int main() {
   int num;
   std::cin >> num;
@@ -41,8 +46,7 @@ int main() {
   for (int i = 0; i < num; ++i) {
     std::cin >> z_func[i];
   }
-  auto prefix_func = GetPrefixFromZFunction(z_func);
-  std::cout << GetStringFromPrefixFunction(prefix_func);
+  std::cout << GetStringFromZFunction(z_func);
 
   return 0;
 }
